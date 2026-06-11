@@ -76,11 +76,11 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [Apache 2.0](https://github.com/indexmap-rs/equivalent/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/indexmap-rs/equivalent/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/indexmap-rs/equivalent](https://github.com/indexmap-rs/equivalent)
-- find_msvc_tools
+- find-msvc-tools
   - Author: Alex Crichton
   - Licenses: [Apache 2.0](https://docs.rs/crate/find-msvc-tools/latest/source/LICENSE-APACHE),
     [MIT License](https://docs.rs/crate/find-msvc-tools/latest/source/LICENSE-MIT)
-  - Source Link: [https://docs.rs/crate/find-msvc-tools/latest/source/](https://docs.rs/crate/find-msvc-tools/latest/source/)
+  - Source Link: [https://docs.rs/crate/find-msvc-tools/](https://docs.rs/crate/find-msvc-tools/)
 - hashbrown
   - Author: Amanieu d'Antras
   - Licenses: [Apache 2.0](https://github.com/rust-lang/hashbrown/blob/master/LICENSE-APACHE),
@@ -150,7 +150,7 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Author: Nicholas Allegra (comex)
   - Licenses: [Apache 2.0](https://github.com/comex/rust-shlex/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/comex/rust-shlex/blob/master/LICENSE-MIT)
-  - Repo Link: [https://github.com/comex/rust-shlex/tree/master](https://github.com/comex/rust-shlex/tree/master)
+  - Repo Link: [https://github.com/comex/rust-shlex](https://github.com/comex/rust-shlex)
 - streaming-iterator
   - Author: Steven Fackler
   - Licenses: [Apache 2.0](https://github.com/sfackler/streaming-iterator/blob/master/LICENSE-APACHE),
