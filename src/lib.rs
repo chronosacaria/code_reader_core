@@ -1,3 +1,4 @@
+pub mod languages;
 pub mod model;
 pub mod speech;
 
@@ -15,11 +16,11 @@ pub fn read_code(input: ReaderInput) -> ReaderOutput {
     }
 }
 
-/// Reads the current line from the source text and converts it into a simple
-/// speech-friendly sentence.
-///
-/// This is intentionally simple for the first version.
-/// Later, this function will be replaced by language-aware parsing.
+/// Reads the current line from the source text.
+
+// This first asks the appropriate language module whether it is able
+// to produce a structural description. If it is unable to do so, it
+// will fall back to simple speech.
 fn read_current_line(input: &ReaderInput) -> ReaderOutput {
     let line_text = get_line(&input.source, input.cursor_line)
         .unwrap_or("")
@@ -29,6 +30,17 @@ fn read_current_line(input: &ReaderInput) -> ReaderOutput {
         return ReaderOutput {
             speech: "Blank line.".to_string(),
         };
+    }
+
+    // For now, Python is hard coded, but in the future, the plan is that
+    // this will be more dynamic. Some other languages modules will need
+    // to be made before this can be tested and implemented.
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) =
+            languages::python::describe_current_line(&input.source, input.cursor_line)
+        {
+            return ReaderOutput { speech };
+        }
     }
 
     let spoken_line = make_simple_speech_text(line_text);
@@ -49,7 +61,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reads_current_python_function_line() {
+    fn reads_current_python_function_line_functionally() {
         let input = ReaderInput {
             language: "python".to_string(),
             source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
@@ -61,9 +73,24 @@ mod tests {
 
         assert_eq!(
             output.speech,
-            "Current line: def calculate total price tax rate"
+            "Function calculate total. Parameters: price; tax rate."
         );
     }
+
+    #[test]
+    fn falls_back_to_simple_speech_for_python_return_line() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::CurrentLine,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Current line: return price * tax rate");
+    }
+    
 
     #[test]
     fn reads_blank_line() {
