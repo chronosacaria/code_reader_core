@@ -1,47 +1,9 @@
-use serde::{Deserialize, Serialize};
+pub mod model;
+pub mod speech;
 
-/// The kind of reading the caller wants.
-///
-/// For the first MVP, we only support reading the current line.
-/// Later, this enum can grow to include:
-///
-/// - CurrentScope
-/// - CurrentFunctionSummary
-/// - FunctionParameters
-/// - CurrentContext
-/// - DiagnosticsNearCursor
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ReadRequest {
-    CurrentLine,
-}
+pub use model::{ReadRequest, ReaderInput, ReaderOutput};
 
-/// The input sent into the code reader core.
-///
-/// This is deliberately not tied to VS Code.
-/// The VS Code extension can translate editor state into this structure later.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReaderInput {
-    pub language: String,
-    pub source: String,
-    pub cursor_line: usize,
-    pub request: ReadRequest,
-}
-
-/// The output returned by the code reader core.
-///
-/// For now, we only return a speech string.
-/// Later, this can become richer and include structured data such as:
-///
-/// - the symbol name
-/// - the enclosing function
-/// - the enclosing class
-/// - the exact source range
-/// - severity information for diagnostics
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReaderOutput {
-    pub speech: String,
-}
+use speech::make_simple_speech_text;
 
 /// Main entry point into the reusable code reader core.
 ///
@@ -77,29 +39,9 @@ fn read_current_line(input: &ReaderInput) -> ReaderOutput {
 }
 
 /// Gets one line from a source string using a zero-based line number.
-///
-/// Zero-based means:
-///
-/// - line 0 is the first line
-/// - line 1 is the second line
-/// - line 2 is the third line
+
 fn get_line(source: &str, cursor_line: usize) -> Option<&str> {
     source.lines().nth(cursor_line)
-}
-
-/// Converts a punctuation-heavy programming line into a very rough speech form.
-///
-/// This is not the final speech system.
-/// It is just enough to prove that the CLI and tests work.
-fn make_simple_speech_text(line: &str) -> String {
-    line.replace("(", " ")
-        .replace(")", " ")
-        .replace(":", " ")
-        .replace(",", " ")
-        .replace("_", " ")
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
 }
 
 #[cfg(test)]
