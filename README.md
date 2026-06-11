@@ -46,6 +46,11 @@ code is not being solely "created" and "provided" by the Artificial Intelligence
 An attempt has not been made to verify the usage of AI in the development of Dependencies or Visual
 Studio Code Extensions.
 
+# Rust Comprehension Disclosure
+It is important to note that this is the first project that I have ever made with Rust. I appreciate
+any and all constructive feedback from various members of the programming community with how I can
+improve the code that I am writing.
+
 # Dependencies Used
 This list should not be considered exhaustive until the completion of this project. This list will
 be updated as the project evolves. The names of the extensions, their license and any links to
