@@ -40,6 +40,21 @@ mod tests {
     }
 
     #[test]
+    fn describes_typed_function_definition_when_cursor_is_on_def_line() {
+        let source = "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate";
+
+        let speech = describe_current_line(source, 0);
+
+        assert_eq!(
+            speech,
+            Some(
+                "Function calculate total. Parameters: price, float; tax rate, float, default zero point one nine. Returns float."
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
     fn returns_none_when_cursor_is_inside_function_body() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
 

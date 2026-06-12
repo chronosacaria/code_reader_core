@@ -85,7 +85,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reads_current_python_function_line_functionally() {
+    fn reads_current_python_function_line_structurally() {
         let input = ReaderInput {
             language: "python".to_string(),
             source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
@@ -100,6 +100,24 @@ mod tests {
             "Function calculate total. Parameters: price; tax rate."
         );
     }
+
+    #[test]
+    fn reads_current_typed_python_function_line_structurally() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::CurrentLine,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Function calculate total. Parameters: price, float; tax rate, float, default zero point one nine. Returns float."
+        );
+    }
+
 
     #[test]
     fn falls_back_to_simple_speech_for_python_return_line() {
@@ -146,6 +164,23 @@ mod tests {
         assert_eq!(
             output.speech,
             "Function calculate total. Parameters: price; tax rate."
+        );
+    }
+
+    #[test]
+    fn summarizes_typed_python_function_when_cursor_is_inside_body() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::FunctionSummary,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Function calculate total. Parameters: price, float; tax rate, float, default zero point one nine. Returns float."
         );
     }
 

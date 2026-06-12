@@ -25,7 +25,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn summarises_function_when_cursor_is_on_def_line() {
+    fn summarizes_function_when_cursor_is_on_def_line() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
 
         let speech = describe_function_summary(source, 0);
@@ -37,7 +37,7 @@ mod tests {
     }
 
     #[test]
-    fn summarises_function_when_cursor_is_inside_body() {
+    fn summarizes_function_when_cursor_is_inside_body() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
 
         let speech = describe_function_summary(source, 1);
@@ -45,6 +45,21 @@ mod tests {
         assert_eq!(
             speech,
             Some("Function calculate total. Parameters: price; tax rate.".to_string())
+        );
+    }
+
+    #[test]
+    fn summarizes_typed_function_when_cursor_is_inside_body() {
+        let source = "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate";
+
+        let speech = describe_function_summary(source, 1);
+
+        assert_eq!(
+            speech,
+            Some(
+                "Function calculate total. Parameters: price, float; tax rate, float, default zero point one nine. Returns float."
+                    .to_string()
+            )
         );
     }
 
