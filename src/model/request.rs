@@ -10,10 +10,17 @@ use serde::{Deserialize, Serialize};
 /// - FunctionParameters
 /// - CurrentContext
 /// - DiagnosticsNearCursor
+/// 
+/// CurrentLine:
+/// Reads or describes the physical line where the cursor is.
+///
+/// FunctionSummary:
+/// Finds the function containing the cursor and summarizes that function.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReadRequest {
     CurrentLine,
+    FunctionSummary,
 }
 
 /// The input sent into the code reader core.

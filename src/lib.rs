@@ -13,6 +13,7 @@ use speech::make_simple_speech_text;
 pub fn read_code(input: ReaderInput) -> ReaderOutput {
     match input.request {
         ReadRequest::CurrentLine => read_current_line(&input),
+        ReadRequest::FunctionSummary => read_function_summary(&input),
     }
 }
 
@@ -50,8 +51,31 @@ fn read_current_line(input: &ReaderInput) -> ReaderOutput {
     }
 }
 
-/// Gets one line from a source string using a zero-based line number.
+/// Summarises the function containing the cursor.
+/// 
+/// For now, this only works for Python, but will be expanded in the future.
+fn read_function_summary(input: &ReaderInput) -> ReaderOutput {
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) =
+            languages::python::describe_function_summary(&input.source, input.cursor_line)
+        {
+            return ReaderOutput { speech };
+        }
 
+        return ReaderOutput {
+            speech: "No Python function was found at the cursor.".to_string(),
+        };
+    }
+
+    ReaderOutput {
+        speech: format!(
+            "Function summaries are not supported for {} yet.",
+            input.language
+        ),
+    }
+}
+
+/// Gets one line from a source string using a zero-based line number.
 fn get_line(source: &str, cursor_line: usize) -> Option<&str> {
     source.lines().nth(cursor_line)
 }
@@ -90,7 +114,71 @@ mod tests {
 
         assert_eq!(output.speech, "Current line: return price * tax rate");
     }
-    
+
+    #[test]
+    fn summarizes_python_function_when_cursor_is_on_def_line() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::FunctionSummary,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Function calculate total. Parameters: price; tax rate."
+        );
+    }
+
+    #[test]
+    fn summarizes_python_function_when_cursor_is_inside_body() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::FunctionSummary,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Function calculate total. Parameters: price; tax rate."
+        );
+    }
+
+    #[test]
+    fn returns_message_when_no_python_function_found_at_cursor() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "import math\n\nx = 10\n".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::FunctionSummary,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "No Python function was found at the cursor.");
+    }
+
+    #[test]
+    fn returns_message_when_function_summaries_not_supported_for_language() {
+        let input = ReaderInput {
+            language: "rust".to_string(),
+            source: "fn main() {}".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::FunctionSummary,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Function summaries are not supported for rust yet."
+        );
+    }
 
     #[test]
     fn reads_blank_line() {
@@ -121,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn deserializes_json_input() {
+    fn deserializes_json_input_for_current_line() {
         let json = r#"
         {
             "language": "python",
@@ -136,6 +224,24 @@ mod tests {
         assert_eq!(input.language, "python");
         assert_eq!(input.cursor_line, 0);
         assert_eq!(input.request, ReadRequest::CurrentLine);
+    }
+
+    #[test]
+    fn deserialize_json_input_for_function_summary() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "def calculate_total(price, tax_rate):",
+            "cursor_line": 0,
+            "request": "function_summary"
+        }
+        "#;
+
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.request, ReadRequest::FunctionSummary);
     }
 
     #[test]
