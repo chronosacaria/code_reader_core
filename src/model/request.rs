@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 // ◯ = Done; X = Not Done
 // - ◯ CurrentLine -- What does this exact line say?
 // - X CurrentScope -- What local block current controls this line?
-// - ◯ CurrentFunctionSummary -- What function am I in, including signature details?
+// - ◯ FunctionSummary -- What function am I in, including signature details?
 // - X FunctionParameters -- What are this function's parameters?
 // - ◯ CurrentContext -- Where am I in the file's larger structure?
 // - X DiagnosticsNearCursor -- What problem near the cursor should I be aware of?
