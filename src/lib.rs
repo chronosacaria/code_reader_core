@@ -14,6 +14,7 @@ pub fn read_code(input: ReaderInput) -> ReaderOutput {
     match input.request {
         ReadRequest::CurrentLine => read_current_line(&input),
         ReadRequest::FunctionSummary => read_function_summary(&input),
+        ReadRequest::CurrentContext => read_current_context(&input),
     }
 }
 
@@ -75,6 +76,28 @@ fn read_function_summary(input: &ReaderInput) -> ReaderOutput {
     }
 }
 
+/// Describes the current code context at the cursor.
+///
+/// For now, this only works for Python, but will be expanded in the future.
+fn read_current_context(input: &ReaderInput) -> ReaderOutput {
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) = 
+            languages::python::describe_current_context(&input.source, input.cursor_line) {
+                return ReaderOutput { speech };
+            }
+
+            return ReaderOutput { 
+                speech: ("No Python context found at cursor.".to_string()) 
+            };  
+        }
+
+        ReaderOutput { speech: format!(
+            "Current context is not available for {} yet.",
+            input.language
+        ), 
+    }
+}
+
 /// Gets one line from a source string using a zero-based line number.
 fn get_line(source: &str, cursor_line: usize) -> Option<&str> {
     source.lines().nth(cursor_line)
@@ -83,6 +106,81 @@ fn get_line(source: &str, cursor_line: usize) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Description Tests
+
+    #[test]
+    fn describes_current_context_at_top_level() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "import math\n\nx = 10\n".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::CurrentContext,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Top level.");
+    }
+
+    #[test]
+    fn describes_current_context_inside_function() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::CurrentContext,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Inside function calculate total.");
+    }
+
+    #[test]
+    fn describes_current_context_inside_class() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "\
+    class Cart:
+        tax_rate = 0.19
+
+        def calculate_total(self):
+            return 0
+    "
+            .to_string(),
+            cursor_line: 1,
+            request: ReadRequest::CurrentContext,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Inside class Cart.");
+    }
+
+    #[test]
+    fn describes_current_context_inside_method() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "\
+    class Cart:
+        def calculate_total(self, price):
+            return price
+    "
+            .to_string(),
+            cursor_line: 2,
+            request: ReadRequest::CurrentContext,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Inside class Cart, function calculate total."
+        );
+    }
+
+    // Reading Tests
 
     #[test]
     fn reads_current_python_function_line_structurally() {
@@ -118,6 +216,35 @@ mod tests {
         );
     }
 
+    #[test]
+    fn reads_blank_line() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def example():\n\n    return 1".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::CurrentLine,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Blank line.");
+    }
+
+    #[test]
+    fn handles_cursor_line_past_end_of_file() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "print('hello')".to_string(),
+            cursor_line: 20,
+            request: ReadRequest::CurrentLine,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Blank line.");
+    }
+
+    // Fallback Tests
 
     #[test]
     fn falls_back_to_simple_speech_for_python_return_line() {
@@ -132,6 +259,8 @@ mod tests {
 
         assert_eq!(output.speech, "Current line: return price * tax rate");
     }
+
+    // Summarising Tests
 
     #[test]
     fn summarizes_python_function_when_cursor_is_on_def_line() {
@@ -184,6 +313,8 @@ mod tests {
         );
     }
 
+    // Null or Empty Return Tests
+
     #[test]
     fn returns_message_when_no_python_function_found_at_cursor() {
         let input = ReaderInput {
@@ -216,31 +347,40 @@ mod tests {
     }
 
     #[test]
-    fn reads_blank_line() {
+    fn returns_message_when_current_context_not_supported_for_language() {
         let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def example():\n\n    return 1".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::CurrentLine,
+            language: "rust".to_string(),
+            source: "fn main() {}".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::CurrentContext,
         };
 
         let output = read_code(input);
 
-        assert_eq!(output.speech, "Blank line.");
+        assert_eq!(
+            output.speech,
+            "Current context is not available for rust yet."
+        );
     }
 
+    // Deserialisation Tests
+
     #[test]
-    fn handles_cursor_line_past_end_of_file() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "print('hello')".to_string(),
-            cursor_line: 20,
-            request: ReadRequest::CurrentLine,
-        };
+    fn deserializes_json_input_for_current_context() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "def calculate_total(price, tax_rate):",
+            "cursor_line": 0,
+            "request": "current_context"
+        }
+        "#;
 
-        let output = read_code(input);
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
 
-        assert_eq!(output.speech, "Blank line.");
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.request, ReadRequest::CurrentContext);
     }
 
     #[test]
@@ -278,6 +418,8 @@ mod tests {
         assert_eq!(input.cursor_line, 0);
         assert_eq!(input.request, ReadRequest::FunctionSummary);
     }
+
+    // Serialisation Tests
 
     #[test]
     fn serializes_json_output() {

@@ -1,5 +1,6 @@
 // Questions Answered:
-// What function contains the cursor?
+// What is the function that my cursor is in?
+// What function am I in, including its signature details?
 
 use super::syntax::{
     describe_function_definition,

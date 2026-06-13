@@ -1,43 +1,55 @@
 # Code Reader Core
+
 Code Reader Core is the foundational core of a screen reader extension that can read out code in
 various programming languages in order to facilitate easier checking, troubleshooting, development
 and maintainence by low vision and blind developers.
+
 ## Goals
+
 In an attempt to avoid as much feature creep as possible, the basic goals for this project are as
 follows:
+
 - Multiple Programming Language Support
 - Speech Output in English, initially, with the goal of other Language outputs
 - Initially focusing on VS Code with the plan of making the tool as IDE and language agnostic as
   possible
 - Different levels of feedback and verbosity
 - Initially build out with Speech Dispatcher for basic readout of code
+
 ## Example of Intention
+
 The ideal output would be based on the requested level of verbosity. A simplified example can be
 as follows:
 
 Code to be Read:
 
 Rust Example
+
 ```rust
 def calculate_total(price: float, tax_rate: float) -> float:
   return price * (1 + tax_rate)
 ```
 
 Java Example
+
 ```java
 public float calculateTotal(float price, float taxRate) {
   return price * (1 + taxRate);
 }
 ```
+
 Basic Intended Speech Output should both be:
-```
+
+```text
 "Function calculate total. Parameters: price, float; tax_rate, float. Returns float."
 ```
+
 It is worth noting that characters such as `(`, `)`, `_`, etc. can be excluded from the speech output
 for a more natural sounding speech.
 
-# Artificial Intelligence (AI) Usage Disclosure
-As I am blind, I have found that using AI to check behind me with my code to be extremely useful. 
+## Artificial Intelligence (AI) Usage Disclosure
+
+As I am blind, I have found that using AI to check behind me with my code to be extremely useful.
 Whilst I do not intend to vibe-code this application, I believe that it is important to disclose
 when AI is used in one's production pipeline. As such, this disclosure should serve as an indication
 that this project is being created with the *assistance* of Artificial Intelligence, but that the
@@ -46,16 +58,19 @@ code is not being solely "created" and "provided" by the Artificial Intelligence
 An attempt has not been made to verify the usage of AI in the development of Dependencies or Visual
 Studio Code Extensions.
 
-# Rust Comprehension Disclosure
+## Rust Comprehension Disclosure
+
 It is important to note that this is the first project that I have ever made with Rust. I appreciate
 any and all constructive feedback from various members of the programming community with how I can
 improve the code that I am writing.
 
-# Dependencies Used
+## Dependencies Used
+
 This list should not be considered exhaustive until the completion of this project. This list will
 be updated as the project evolves. The names of the extensions, their license and any links to
 repositiories shall be provided. In order to best track the relations between packages, I am going
 to try to make sure that I cite every package noted in the [Cargo.lock](https://github.com/chronosacaria/code_reader_core/blob/master/Cargo.lock) file.
+
 - aho-corasick
   - Author: Andrew Gallant
   - Licenses: [MIT License](https://github.com/BurntSushi/aho-corasick/blob/master/LICENSE-MIT),
@@ -92,22 +107,22 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
     [MIT License](https://github.com/indexmap-rs/indexmap/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/indexmap-rs/indexmap](https://github.com/indexmap-rs/indexmap)
 - itoa
-  - Author: David Tolnay 
+  - Author: David Tolnay
   - Licenses: [Apache 2.0](https://github.com/dtolnay/itoa/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/dtolnay/itoa/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/dtolnay/itoa](https://github.com/dtolnay/itoa)
 - memchr
-  - Author: Andrew Gallant 
+  - Author: Andrew Gallant
   - Licenses: [MIT License](https://github.com/BurntSushi/memchr/blob/master/LICENSE-MIT),
     [Unlicense](https://github.com/BurntSushi/memchr/blob/master/UNLICENSE),
   - Repo Link: [https://github.com/BurntSushi/memchr](https://github.com/BurntSushi/memchr)
 - proc-macro2
-  - Author: David Tolnay 
+  - Author: David Tolnay
   - Licenses: [Apache 2.0](https://github.com/dtolnay/proc-macro2/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/dtolnay/proc-macro2/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/dtolnay/proc-macro2](https://github.com/dtolnay/proc-macro2)
 - quote
-  - Author: David Tolnay 
+  - Author: David Tolnay
   - Licenses: [Apache 2.0](https://github.com/dtolnay/quote/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/dtolnay/quote/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/dtolnay/quote](https://github.com/dtolnay/quote)
@@ -179,10 +194,12 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - License: [MIT License](https://github.com/dtolnay/zmij/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/dtolnay/zmij](https://github.com/dtolnay/zmij)
 
-# Visual Studio Code Extensions Used
+## Visual Studio Code Extensions Used
+
 This list should not be considered exhaustive until the completion of this project. This list will
 be updated as the project evolves. The names of the extensions, their license and any links to
 repositiories shall be provided.
+
 - CodeLLDB
   - Author: Vadim Chugunov
   - License: [MIT License](https://github.com/vadimcn/codelldb/blob/master/LICENSE)
@@ -194,9 +211,9 @@ repositiories shall be provided.
 - Dependi
   - Author: Fill Labs
   - License: [Custom License](https://openvsx.eclipsecontent.org/fill-labs/dependi/0.7.22/LICENSE.txt)
-  - Repo Link: https://github.com/filllabs/dependi
+  - Repo Link: [https://github.com/filllabs/dependi](https://github.com/filllabs/dependi)
 - Error Lense
-  - Author: usernamehw
+  - Author: Alexander
   - License: [MIT License](https://github.com/usernamehw/vscode-error-lens/blob/master/LICENSE)
   - Repo Link: [https://github.com/usernamehw/vscode-error-lens](https://github.com/usernamehw/vscode-error-lens)
 - ESLint
@@ -207,6 +224,10 @@ repositiories shall be provided.
   - Author: tamasfe
   - License: [MIT License](https://github.com/tamasfe/taplo/blob/master/LICENSE)
   - Repo Link: [https://github.com/tamasfe/taplo](https://github.com/tamasfe/taplo)
+- markdownlint
+  - Author: David Anson
+  - License: [MIT License](https://github.com/DavidAnson/vscode-markdownlint/blob/master/LICENSE)
+  - Repo Link: [https://github.com/DavidAnson/vscode-markdownlint](https://github.com/DavidAnson/vscode-markdownlint)
 - Prettier - Code formatter
   - Author: Prettier
   - License: [MIT License](https://github.com/prettier/prettier-vscode/blob/master/LICENSE)

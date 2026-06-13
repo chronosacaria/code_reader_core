@@ -51,6 +51,32 @@ pub fn find_function_definition_starting_on_line<'tree>(
     None
 }
 
+/// Recursively searches the syntax tree for the most specific Python class
+/// definition that contains the requested cursor line.
+///
+/// This is useful for `current_context`, because the cursor may be inside
+/// a class body or inside a method belonging to a class.
+pub fn find_class_definition_containing_line<'tree>(
+    node: Node<'tree>,
+    cursor_line: usize,
+) -> Option<Node<'tree>> {
+    let mut cursor = node.walk();
+
+    for child in node.named_children(&mut cursor) {
+        if node_contains_line(child, cursor_line) {
+            if let Some(found) = find_class_definition_containing_line(child, cursor_line) {
+                return Some(found);
+            }
+        }
+    }
+
+    if node.kind() == "class_definition" && node_contains_line(node, cursor_line) {
+        return Some(node);
+    }
+
+    None
+}
+
 /// Recursively searches the syntax tree for the most specific Python function
 /// definition that contains the requested cursor line.
 ///
@@ -85,15 +111,29 @@ fn node_contains_line(node: Node, line: usize) -> bool {
     start_row <= line && line <= end_row
 }
 
+/// Extracts and speech-formats the name of a Python class definition.
+pub fn get_class_name(class_node: Node, source: &str) -> String {
+    class_node
+        .child_by_field_name("name")
+        .and_then(|name_node| name_node.utf8_text(source.as_bytes()).ok())
+        .map(make_simple_speech_text)
+        .unwrap_or_else(|| "unknown class".to_string())
+}
+
+/// Extracts and speech-formats the name of a Python function definition.
+pub fn get_function_name(function_node: Node, source: &str) -> String {
+    function_node
+        .child_by_field_name("name")
+        .and_then(|name_node| name_node.utf8_text(source.as_bytes()).ok())
+        .map(make_simple_speech_text)
+        .unwrap_or_else(|| "unknown function".to_string())
+}
+
 /// Converts a Python function_definition node into speech text.
 pub fn describe_function_definition(function_node: Node, source: &str) -> String {
     let source_bytes = source.as_bytes();
 
-    let function_name = function_node
-        .child_by_field_name("name")
-        .and_then(|name_node| name_node.utf8_text(source_bytes).ok())
-        .map(make_simple_speech_text)
-        .unwrap_or_else(|| "unknown function".to_string());
+    let function_name = get_function_name(function_node, source);
 
     let parameters = function_node
         .child_by_field_name("parameters")
@@ -485,6 +525,72 @@ fn split_once_top_level(text: &str, separator: char) -> (&str, Option<&str>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finds_class_containing_cursor_line() {
+        let source = "\
+    class Cart:
+        def calculate_total(self):
+            return 0
+    ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let class_node = find_class_definition_containing_line(root, 2);
+
+        assert!(class_node.is_some());
+    }
+
+    #[test]
+    fn does_not_find_class_when_cursor_is_outside_class() {
+        let source = "\
+    class Cart:
+        pass
+
+    x = 10
+    ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let class_node = find_class_definition_containing_line(root, 3);
+
+        assert!(class_node.is_none());
+    }
+
+    #[test]
+    fn gets_class_name() {
+        let source = "\
+    class Cart:
+        pass
+    ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let class_node = find_class_definition_containing_line(root, 1)
+            .expect("Expected class node");
+
+        let name = get_class_name(class_node, source);
+
+        assert_eq!(name, "Cart");
+    }
+
+
+    #[test]
+    fn gets_function_name() {
+        let source = "\
+    def calculate_total():
+        return 0
+    ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node = find_function_definition_containing_line(root, 1)
+            .expect("Expected function node");
+
+        let name = get_function_name(function_node, source);
+
+        assert_eq!(name, "calculate total");
+    }
 
     #[test]
     fn finds_function_that_starts_on_cursor_line() {

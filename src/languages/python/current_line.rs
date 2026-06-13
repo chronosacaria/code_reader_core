@@ -1,5 +1,6 @@
 // Questions Answered:
-// Can the current physical Python line be described structurally?
+// What is on this line?
+// What does this exact line say?
 
 use super::syntax::{
     describe_function_definition,
