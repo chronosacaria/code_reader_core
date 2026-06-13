@@ -25,6 +25,8 @@ pub fn describe_function_summary(source: &str, cursor_line: usize) -> Option<Str
 mod tests {
     use super::*;
 
+    // Summarising Tests
+
     #[test]
     fn summarizes_function_when_cursor_is_on_def_line() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
@@ -64,6 +66,8 @@ mod tests {
         );
     }
 
+    // Return Tests
+
     #[test]
     fn returns_none_when_cursor_is_outside_any_function() {
         let source = "import math\n\nx = 10\n";
@@ -73,14 +77,16 @@ mod tests {
         assert_eq!(speech, None);
     }
 
+    // Drill Down Test
+
     #[test]
     fn prefers_innermost_function() {
         let source = "\
-def outer():
-    def inner(value):
-        return value
-    return inner(1)
-";
+            def outer():
+                def inner(value):
+                    return value
+                return inner(1)
+            ";
 
         let speech = describe_function_summary(source, 2);
 

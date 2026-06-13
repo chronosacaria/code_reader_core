@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 //
 // ◯ = Done; X = Not Done
 // - ◯ CurrentLine -- What does this exact line say?
-// - X CurrentScope -- What local block current controls this line?
+// - X CurrentScope -- What local block currently controls this line?
 // - ◯ FunctionSummary -- What function am I in, including signature details?
-// - X FunctionParameters -- What are this function's parameters?
+// - ◯ FunctionParameters -- What are this function's parameters?
 // - ◯ CurrentContext -- Where am I in the file's larger structure?
 // - X DiagnosticsNearCursor -- What problem near the cursor should I be aware of?
 // 
@@ -20,6 +20,9 @@ use serde::{Deserialize, Serialize};
 // FunctionSummary:
 // Finds the function containing the cursor and summarizes that function.
 // 
+// FunctionParameters:
+// Finds the function containing the cursor and reads only its parameters.
+//
 // CurrentContext:
 // Describes where the cursor is, such as the current class and/or function.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -27,6 +30,7 @@ use serde::{Deserialize, Serialize};
 pub enum ReadRequest {
     CurrentLine,
     FunctionSummary,
+    FunctionParameters,
     CurrentContext,
 }
 

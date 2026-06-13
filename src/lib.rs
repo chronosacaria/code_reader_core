@@ -13,6 +13,7 @@ use speech::make_simple_speech_text;
 pub fn read_code(input: ReaderInput) -> ReaderOutput {
     match input.request {
         ReadRequest::CurrentLine => read_current_line(&input),
+        ReadRequest::FunctionParameters => read_function_parameters(&input),
         ReadRequest::FunctionSummary => read_function_summary(&input),
         ReadRequest::CurrentContext => read_current_context(&input),
     }
@@ -71,6 +72,30 @@ fn read_function_summary(input: &ReaderInput) -> ReaderOutput {
     ReaderOutput {
         speech: format!(
             "Function summaries are not supported for {} yet.",
+            input.language
+        ),
+    }
+}
+
+/// Reads only the parameters of the function containing the cursor.
+///
+/// For now, this only works for Python, but will be expanded in the future.
+fn read_function_parameters(input: &ReaderInput) -> ReaderOutput {
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) =
+            languages::python::describe_function_parameter_list(&input.source, input.cursor_line)
+        {
+            return ReaderOutput { speech };
+        }
+
+        return ReaderOutput {
+            speech: "No Python function was found at the cursor.".to_string(),
+        };
+    }
+
+    ReaderOutput {
+        speech: format!(
+            "Function parameters are not supported for {} yet.",
             input.language
         ),
     }
@@ -182,6 +207,8 @@ mod tests {
 
     // Reading Tests
 
+    // Function Tests
+
     #[test]
     fn reads_current_python_function_line_structurally() {
         let input = ReaderInput {
@@ -215,6 +242,69 @@ mod tests {
             "Function calculate total. Parameters: price, float; tax rate, float, default zero point one nine. Returns float."
         );
     }
+
+    // Parameter Tests
+
+    #[test]
+    fn reads_python_function_parameters_when_cursor_is_on_def_line() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::FunctionParameters,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Parameters: price; tax rate.");
+    }
+
+    #[test]
+    fn reads_python_function_parameters_when_cursor_is_inside_body() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::FunctionParameters,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Parameters: price; tax rate.");
+    }
+
+    #[test]
+    fn reads_typed_python_function_parameters_when_cursor_is_inside_body() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::FunctionParameters,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Parameters: price, float; tax rate, float, default zero point one nine."
+        );
+    }
+
+    #[test]
+    fn reads_no_parameters_for_function_without_parameters() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def main():\n    return 0".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::FunctionParameters,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "No parameters.");
+    }
+
+    // Line Tests
 
     #[test]
     fn reads_blank_line() {
@@ -261,6 +351,8 @@ mod tests {
     }
 
     // Summarising Tests
+
+    // Summarising Function Tests
 
     #[test]
     fn summarizes_python_function_when_cursor_is_on_def_line() {
@@ -315,6 +407,8 @@ mod tests {
 
     // Null or Empty Return Tests
 
+    // Null or Empty Function Return Tests
+
     #[test]
     fn returns_message_when_no_python_function_found_at_cursor() {
         let input = ReaderInput {
@@ -326,7 +420,10 @@ mod tests {
 
         let output = read_code(input);
 
-        assert_eq!(output.speech, "No Python function was found at the cursor.");
+        assert_eq!(
+            output.speech, 
+            "No Python function was found at the cursor."
+        );
     }
 
     #[test]
@@ -346,6 +443,8 @@ mod tests {
         );
     }
 
+    // Null or Empty Context Return Tests
+    
     #[test]
     fn returns_message_when_current_context_not_supported_for_language() {
         let input = ReaderInput {
@@ -360,6 +459,42 @@ mod tests {
         assert_eq!(
             output.speech,
             "Current context is not available for rust yet."
+        );
+    }
+
+    // Null or Empty Parameter Return Tests
+
+    #[test]
+    fn returns_message_when_no_python_function_found_for_parameters() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "import math\n\nx = 10\n".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::FunctionParameters,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "No Python function was found at the cursor."
+        );
+    }
+
+    #[test]
+    fn returns_message_when_function_parameters_not_supported_for_language() {
+        let input = ReaderInput {
+            language: "rust".to_string(),
+            source: "fn main() {}".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::FunctionParameters,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Function parameters are not supported for rust yet."
         );
     }
 
@@ -417,6 +552,24 @@ mod tests {
         assert_eq!(input.language, "python");
         assert_eq!(input.cursor_line, 0);
         assert_eq!(input.request, ReadRequest::FunctionSummary);
+    }
+
+    #[test]
+    fn deserializes_json_input_for_function_parameters() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "def calculate_total(price, tax_rate):",
+            "cursor_line": 0,
+            "request": "function_parameters"
+        }
+        "#;
+
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.request, ReadRequest::FunctionParameters);
     }
 
     // Serialisation Tests

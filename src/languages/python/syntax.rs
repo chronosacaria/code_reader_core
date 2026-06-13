@@ -155,6 +155,30 @@ pub fn describe_function_definition(function_node: Node, source: &str) -> String
     }
 }
 
+/// Converts a Python function_definition node into parameter-only speech.
+///
+/// This is used by the `FunctionParameters` request.
+///
+/// It intentionally does not include:
+///
+/// - the function name
+/// - the return type
+/// - the class/function context
+pub fn describe_function_parameters(function_node: Node, source: &str) -> String {
+    let parameters = function_node
+        .child_by_field_name("parameters")
+        .and_then(
+            |parameters_node| parameters_node
+                .utf8_text(source.as_bytes())
+                .ok())
+        .map(extract_parameter_summaries)
+        .unwrap_or_default();
+
+    let parameter_speech = describe_parameters(&parameters);
+
+    format!("{parameter_speech}.")
+}
+
 /// Converts a list of parameter summaries into one speech sentence.
 ///
 /// Examples:
@@ -526,6 +550,8 @@ fn split_once_top_level(text: &str, separator: char) -> (&str, Option<&str>) {
 mod tests {
     use super::*;
 
+    // Finding Tests
+
     #[test]
     fn finds_class_containing_cursor_line() {
         let source = "\
@@ -556,6 +582,41 @@ mod tests {
 
         assert!(class_node.is_none());
     }
+
+    #[test]
+    fn finds_function_that_starts_on_cursor_line() {
+        let source = "def calculate_total(price, tax_rate):\n   return price * tax_rate";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node = find_function_definition_starting_on_line(root, 0);
+
+        assert!(function_node.is_some());
+    }
+
+    #[test]
+    fn does_not_find_starting_function_when_cursor_is_in_body() {
+        let source = "def calculate_total(price, tax_rate):\n   return price * tax_rate";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node = find_function_definition_starting_on_line(root, 1);
+
+        assert!(function_node.is_none());
+    }
+
+    #[test]
+    fn finds_function_containing_cursor_line() {
+        let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node = find_function_definition_starting_on_line(root, 0);
+
+        assert!(function_node.is_some());
+    }
+
+    // Getting Tests
 
     #[test]
     fn gets_class_name() {
@@ -592,39 +653,56 @@ mod tests {
         assert_eq!(name, "calculate total");
     }
 
+    // Describing Tests
+    
     #[test]
-    fn finds_function_that_starts_on_cursor_line() {
-        let source = "def calculate_total(price, tax_rate):\n   return price * tax_rate";
-        let tree = parse_python(source).unwrap();
-        let root = tree.root_node();
-
-        let function_node = find_function_definition_starting_on_line(root, 0);
-
-        assert!(function_node.is_some());
-    }
-
-    #[test]
-    fn does_not_find_starting_function_when_cursor_is_in_body() {
-        let source = "def calculate_total(price, tax_rate):\n   return price * tax_rate";
-        let tree = parse_python(source).unwrap();
-        let root = tree.root_node();
-
-        let function_node = find_function_definition_starting_on_line(root, 1);
-
-        assert!(function_node.is_none());
-    }
-
-    #[test]
-    fn finds_function_containing_cursor_line() {
+    fn describes_function_parameters_only() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
         let tree = parse_python(source).unwrap();
         let root = tree.root_node();
 
-        let function_node = find_function_definition_starting_on_line(root, 0);
+        let function_node =
+            find_function_definition_starting_on_line(root, 0)
+                .expect("Expected function node");
 
-        assert!(function_node.is_some());
+        let speech = describe_function_parameters(function_node, source);
+
+        assert_eq!(speech, "Parameters: price; tax rate.");
     }
-    
+
+    #[test]
+    fn describes_typed_function_parameters_only() {
+        let source = "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node =
+            find_function_definition_starting_on_line(root, 0)
+                .expect("Expected function node");
+
+        let speech = describe_function_parameters(function_node, source);
+
+        assert_eq!(
+            speech,
+            "Parameters: price, float; tax rate, float, default zero point one nine."
+        );
+    }
+
+    #[test]
+    fn describes_no_parameters_only() {
+        let source = "def main():\n    return 0";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node =
+            find_function_definition_starting_on_line(root, 0)
+                .expect("Expected function node");
+
+        let speech = describe_function_parameters(function_node, source);
+
+        assert_eq!(speech, "No parameters.");
+    }
+
     #[test]
     fn describes_function_definition_with_parameters() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
@@ -729,6 +807,8 @@ mod tests {
             "Function find user. Parameters: name, str or none, default none. Returns bool."
         );
     }
+
+    // Splitting Tests
 
     #[test]
     fn splits_top_level_commas_without_splitting_inside_defaults() {

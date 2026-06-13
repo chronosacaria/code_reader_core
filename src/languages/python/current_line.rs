@@ -28,6 +28,8 @@ pub fn describe_current_line(source: &str, cursor_line: usize) -> Option<String>
 mod tests {
     use super::*;
 
+    // Describing Tests
+
     #[test]
     fn describes_function_definition_when_cursor_is_on_def_line() {
         let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
@@ -54,6 +56,8 @@ mod tests {
             )
         );
     }
+
+    // Return Tests
 
     #[test]
     fn returns_none_when_cursor_is_inside_function_body() {

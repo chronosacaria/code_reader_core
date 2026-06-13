@@ -56,9 +56,9 @@ mod tests {
     #[test]
     fn describes_function_context() {
         let source = "\
-def calculate_total(price, tax_rate):
-    return price * tax_rate
-";
+            def calculate_total(price, tax_rate):
+                return price * tax_rate
+            ";
 
         let speech = describe_current_context(source, 1);
 
@@ -71,12 +71,12 @@ def calculate_total(price, tax_rate):
     #[test]
     fn describes_class_context_when_inside_class_but_outside_method() {
         let source = "\
-class Cart:
-    tax_rate = 0.19
+            class Cart:
+                tax_rate = 0.19
 
-    def calculate_total(self):
-        return 0
-";
+                def calculate_total(self):
+                    return 0
+            ";
 
         let speech = describe_current_context(source, 1);
 
@@ -86,10 +86,10 @@ class Cart:
     #[test]
     fn describes_class_and_function_context_when_inside_method() {
         let source = "\
-class Cart:
-    def calculate_total(self, price):
-        return price
-";
+            class Cart:
+                def calculate_total(self, price):
+                    return price
+            ";
 
         let speech = describe_current_context(source, 2);
 
@@ -102,11 +102,11 @@ class Cart:
     #[test]
     fn prefers_inner_function_for_nested_function_context() {
         let source = "\
-def outer():
-    def inner(value):
-        return value
-    return inner(1)
-";
+            def outer():
+                def inner(value):
+                    return value
+                return inner(1)
+            ";
 
         let speech = describe_current_context(source, 2);
 
@@ -116,12 +116,12 @@ def outer():
     #[test]
     fn describes_nested_function_inside_method() {
         let source = "\
-class Cart:
-    def calculate_total(self, price):
-        def apply_tax(value):
-            return value * 1.19
-        return apply_tax(price)
-";
+            class Cart:
+                def calculate_total(self, price):
+                    def apply_tax(value):
+                        return value * 1.19
+                    return apply_tax(price)
+            ";
 
         let speech = describe_current_context(source, 3);
 
