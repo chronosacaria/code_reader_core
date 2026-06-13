@@ -103,6 +103,60 @@ pub fn find_function_definition_containing_line<'tree>(
     None
 }
 
+/// Recursively searches the syntax tree for the most specific local Python
+/// scope node that contains the requested cursor line.
+///
+/// This is used by `current_scope`.
+
+/// It does not return function or class nodes.
+pub fn find_local_scope_node_containing_line<'tree>(
+    node: Node<'tree>,
+    cursor_line: usize,
+) -> Option<Node<'tree>> {
+    if !node_contains_line(node, cursor_line) {
+        return None;
+    }
+
+    let mut best_match = if is_local_scope_node(node) {
+        Some(node)
+    } else {
+        None
+    };
+
+    let mut cursor = node.walk();
+
+    for child in node.named_children(&mut cursor) {
+        if node_contains_line(child, cursor_line) {
+            if let Some(found) = find_local_scope_node_containing_line(child, cursor_line) {
+                best_match = Some(found);
+            }
+        }
+    }
+
+    best_match
+}
+
+/// Returns true when a syntax node represents a local Python scope/block.
+///
+/// This is intentionally separate from function/class detection.
+/// Function and class nodes are broader context containers, while this helper
+/// focuses on local block structures.
+fn is_local_scope_node(node: Node) -> bool {
+    matches!(
+        node.kind(),
+        "for_statement"
+            |"if_statement"
+            | "match_statement"
+            | "try_statement"
+            | "while_statement"
+            | "with_statement"
+            | "elif_clause"
+            | "else_clause"
+            | "except_clause"
+            | "finally_clause"
+    )
+}
+
 /// Returns true when a syntax node covers the requested line.
 fn node_contains_line(node: Node, line: usize) -> bool {
     let start_row = node.start_position().row;
@@ -127,6 +181,25 @@ pub fn get_function_name(function_node: Node, source: &str) -> String {
         .and_then(|name_node| name_node.utf8_text(source.as_bytes()).ok())
         .map(make_simple_speech_text)
         .unwrap_or_else(|| "unknown function".to_string())
+}
+
+/// Converts a local Python scope node into short speech.
+///
+/// This describes the kind of local block, not the full source condition.
+pub fn describe_local_scope_node(scope_node: Node) -> String {
+    match scope_node.kind() {
+        "for_statement" => "for loop".to_string(),
+        "if_statement" => "if statement".to_string(),
+        "match_statement" => "match statement".to_string(),
+        "try_statement" => "try statement".to_string(),
+        "while_statement" => "while loop".to_string(),
+        "with_statement" => "with statement".to_string(),
+        "elif_clause" => "elif clause".to_string(),
+        "else_clause" => "else clause".to_string(),
+        "except_clause" => "except clause".to_string(),
+        "finally_clause" => "finally clause".to_string(),
+        other => format!("{other} scope")
+    }
 }
 
 /// Converts a Python function_definition node into speech text.
@@ -568,6 +641,90 @@ mod tests {
     }
 
     #[test]
+    fn finds_function_that_starts_on_cursor_line() {
+        let source = "def calculate_total(price, tax_rate):\n   return price * tax_rate";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node = find_function_definition_starting_on_line(root, 0);
+
+        assert!(function_node.is_some());
+    }
+
+    #[test]
+    fn finds_function_containing_cursor_line() {
+        let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let function_node = find_function_definition_starting_on_line(root, 0);
+
+        assert!(function_node.is_some());
+    }
+
+    #[test]
+    fn finds_local_if_scope_containing_cursor_line() {
+        let source = "\
+            def calculate_total(price):
+                if price > 0:
+                    return price
+            ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let scope_node = find_local_scope_node_containing_line(root, 2);
+
+        assert!(scope_node.is_some());
+        assert_eq!(
+            describe_local_scope_node(scope_node.unwrap()),
+            "if statement"
+        );
+    }
+
+    #[test]
+    fn finds_inner_local_scope_when_scopes_are_nested() {
+        let source = "\
+            def process_items(items):
+                for item in items:
+                    if item:
+                        print(item)
+            ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let scope_node = find_local_scope_node_containing_line(root, 3);
+
+        assert!(scope_node.is_some());
+        assert_eq!(
+            describe_local_scope_node(scope_node.unwrap()),
+            "if statement"
+        );
+    }
+
+    #[test]
+    fn finds_for_loop_scope_containing_cursor_line() {
+        let source = "\
+            def process_items(items):
+                for item in items:
+                    print(item)
+            ";
+        let tree = parse_python(source).unwrap();
+        let root = tree.root_node();
+
+        let scope_node = find_local_scope_node_containing_line(root, 2);
+
+        assert!(scope_node.is_some());
+        assert_eq!(
+            describe_local_scope_node(scope_node.unwrap()),
+            "for loop"
+        );
+    }
+
+    // Does Not Find Tests
+
+    // No Class
+
+    #[test]
     fn does_not_find_class_when_cursor_is_outside_class() {
         let source = "\
     class Cart:
@@ -583,16 +740,7 @@ mod tests {
         assert!(class_node.is_none());
     }
 
-    #[test]
-    fn finds_function_that_starts_on_cursor_line() {
-        let source = "def calculate_total(price, tax_rate):\n   return price * tax_rate";
-        let tree = parse_python(source).unwrap();
-        let root = tree.root_node();
-
-        let function_node = find_function_definition_starting_on_line(root, 0);
-
-        assert!(function_node.is_some());
-    }
+    // No Function
 
     #[test]
     fn does_not_find_starting_function_when_cursor_is_in_body() {
@@ -605,16 +753,22 @@ mod tests {
         assert!(function_node.is_none());
     }
 
+    // No Local Scope
+    
     #[test]
-    fn finds_function_containing_cursor_line() {
-        let source = "def calculate_total(price, tax_rate):\n    return price * tax_rate";
+    fn does_not_find_local_scope_contains_cursor_line() {
+        let source = "\
+            def calculate_total(price):
+                return price
+            ";
         let tree = parse_python(source).unwrap();
         let root = tree.root_node();
 
-        let function_node = find_function_definition_starting_on_line(root, 0);
+        let scope_node = find_local_scope_node_containing_line(root, 1);
 
-        assert!(function_node.is_some());
+        assert!(scope_node.is_none());
     }
+
 
     // Getting Tests
 

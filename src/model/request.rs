@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 //
 // ◯ = Done; X = Not Done
 // - ◯ CurrentLine -- What does this exact line say?
-// - X CurrentScope -- What local block currently controls this line?
+// - ◯ CurrentScope -- What local block currently controls this line?
 // - ◯ FunctionSummary -- What function am I in, including signature details?
 // - ◯ FunctionParameters -- What are this function's parameters?
 // - ◯ CurrentContext -- Where am I in the file's larger structure?
@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum ReadRequest {
     CurrentLine,
+    CurrentScope,
     FunctionSummary,
     FunctionParameters,
     CurrentContext,

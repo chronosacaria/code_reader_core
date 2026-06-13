@@ -13,6 +13,7 @@ use speech::make_simple_speech_text;
 pub fn read_code(input: ReaderInput) -> ReaderOutput {
     match input.request {
         ReadRequest::CurrentLine => read_current_line(&input),
+        ReadRequest::CurrentScope => read_current_scope(&input),
         ReadRequest::FunctionParameters => read_function_parameters(&input),
         ReadRequest::FunctionSummary => read_function_summary(&input),
         ReadRequest::CurrentContext => read_current_context(&input),
@@ -54,7 +55,7 @@ fn read_current_line(input: &ReaderInput) -> ReaderOutput {
 }
 
 /// Summarises the function containing the cursor.
-/// 
+///
 /// For now, this only works for Python, but will be expanded in the future.
 fn read_function_summary(input: &ReaderInput) -> ReaderOutput {
     if input.language.eq_ignore_ascii_case("python") {
@@ -106,20 +107,42 @@ fn read_function_parameters(input: &ReaderInput) -> ReaderOutput {
 /// For now, this only works for Python, but will be expanded in the future.
 fn read_current_context(input: &ReaderInput) -> ReaderOutput {
     if input.language.eq_ignore_ascii_case("python") {
-        if let Some(speech) = 
+        if let Some(speech) =
             languages::python::describe_current_context(&input.source, input.cursor_line) {
                 return ReaderOutput { speech };
             }
 
-            return ReaderOutput { 
-                speech: ("No Python context found at cursor.".to_string()) 
-            };  
-        }
+            return ReaderOutput {
+                speech: ("No Python context found at cursor.".to_string()),
+            };
+    }
 
-        ReaderOutput { speech: format!(
+    ReaderOutput {
+        speech: format!(
             "Current context is not available for {} yet.",
             input.language
-        ), 
+        ),
+    }
+}
+
+/// Describes the current code scope at the cursor.
+///
+/// For now, this only works for Python, but will be expanded in the future.
+fn read_current_scope(input: &ReaderInput) -> ReaderOutput {
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) =
+            languages::python::describe_current_scope(&input.source, input.cursor_line)
+        {
+            return ReaderOutput { speech };
+        }
+
+        return ReaderOutput {
+            speech: ("No Python scope found at cursor.".to_string()),
+        };
+    }
+
+    ReaderOutput {
+        speech: format!("Current Scope is not available for {} yet.", input.language),
     }
 }
 
@@ -133,6 +156,105 @@ mod tests {
     use super::*;
 
     // Description Tests
+
+    // Scope Tests
+
+    #[test]
+    fn describes_current_scope_at_top_level() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "import math\n\nx = 10\n".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::CurrentScope,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Current Scope: top level.");
+    }
+
+    #[test]
+    fn describes_current_scope_inside_function() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "def calculate_total(price):\n    return price".to_string(),
+            cursor_line: 1,
+            request: ReadRequest::CurrentScope,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Current Scope: function calculate total.");
+    }
+
+    #[test]
+    fn describes_current_scope_inside_if_statement() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "\
+                def calculate_total(price):
+                    if price > 0:
+                        return price
+                "
+            .to_string(),
+            cursor_line: 2,
+            request: ReadRequest::CurrentScope,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Current Scope: if statement, inside function calculate total."
+        );
+    }
+
+    #[test]
+    fn describes_current_scope_inside_for_loop() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "\
+                def process_items(items):
+                    for item in items:
+                        print(item)
+                "
+            .to_string(),
+            cursor_line: 2,
+            request: ReadRequest::CurrentScope,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Current Scope: for loop, inside function process items."
+        );
+    }
+
+    #[test]
+    fn describes_current_scope_inside_method_for_loop() {
+        let input = ReaderInput {
+            language: "python".to_string(),
+            source: "\
+                class Cart:
+                    def print_items(self, items):
+                        for item in items:
+                            print(item)
+                "
+            .to_string(),
+            cursor_line: 3,
+            request: ReadRequest::CurrentScope,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Current Scope: for loop, inside class Cart, function print items."
+        );
+    }
+
+    // Context Tests
 
     #[test]
     fn describes_current_context_at_top_level() {
@@ -167,12 +289,12 @@ mod tests {
         let input = ReaderInput {
             language: "python".to_string(),
             source: "\
-    class Cart:
-        tax_rate = 0.19
+                class Cart:
+                    tax_rate = 0.19
 
-        def calculate_total(self):
-            return 0
-    "
+                    def calculate_total(self):
+                        return 0
+                "
             .to_string(),
             cursor_line: 1,
             request: ReadRequest::CurrentContext,
@@ -188,10 +310,10 @@ mod tests {
         let input = ReaderInput {
             language: "python".to_string(),
             source: "\
-    class Cart:
-        def calculate_total(self, price):
-            return price
-    "
+                class Cart:
+                    def calculate_total(self, price):
+                        return price
+                "
             .to_string(),
             cursor_line: 2,
             request: ReadRequest::CurrentContext,
@@ -421,7 +543,7 @@ mod tests {
         let output = read_code(input);
 
         assert_eq!(
-            output.speech, 
+            output.speech,
             "No Python function was found at the cursor."
         );
     }
@@ -444,7 +566,24 @@ mod tests {
     }
 
     // Null or Empty Context Return Tests
-    
+
+    #[test]
+    fn returns_message_when_current_scope_not_supported_for_language() {
+        let input = ReaderInput {
+            language: "rust".to_string(),
+            source: "fn main() {}".to_string(),
+            cursor_line: 0,
+            request: ReadRequest::CurrentScope,
+        };
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Current Scope is not available for rust yet."
+        );
+    }
+
     #[test]
     fn returns_message_when_current_context_not_supported_for_language() {
         let input = ReaderInput {
@@ -475,10 +614,7 @@ mod tests {
 
         let output = read_code(input);
 
-        assert_eq!(
-            output.speech,
-            "No Python function was found at the cursor."
-        );
+        assert_eq!(output.speech, "No Python function was found at the cursor.");
     }
 
     #[test]
@@ -499,6 +635,24 @@ mod tests {
     }
 
     // Deserialisation Tests
+
+    #[test]
+    fn deserializes_json_input_for_current_scope() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "def calculate_total(price):\n    return price",
+            "cursor_line": 1,
+            "request": "current_scope"
+        }
+        "#;
+
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 1);
+        assert_eq!(input.request, ReadRequest::CurrentScope);
+    }
 
     #[test]
     fn deserializes_json_input_for_current_context() {
