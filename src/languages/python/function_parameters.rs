@@ -8,7 +8,6 @@ use super::syntax::{
     parse_python,
 };
 
-
 /// Describes only the parameters of the Python function containing the cursor.
 ///
 /// Unlike `describe_function_summary`, this intentionally does not include:

@@ -107,7 +107,6 @@ pub fn find_function_definition_containing_line<'tree>(
 /// scope node that contains the requested cursor line.
 ///
 /// This is used by `current_scope`.
-
 /// It does not return function or class nodes.
 pub fn find_local_scope_node_containing_line<'tree>(
     node: Node<'tree>,
