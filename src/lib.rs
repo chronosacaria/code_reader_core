@@ -108,13 +108,14 @@ fn read_function_parameters(input: &ReaderInput) -> ReaderOutput {
 fn read_current_context(input: &ReaderInput) -> ReaderOutput {
     if input.language.eq_ignore_ascii_case("python") {
         if let Some(speech) =
-            languages::python::describe_current_context(&input.source, input.cursor_line) {
-                return ReaderOutput { speech };
-            }
+            languages::python::describe_current_context(&input.source, input.cursor_line)
+        {
+            return ReaderOutput { speech };
+        }
 
-            return ReaderOutput {
-                speech: ("No Python context found at cursor.".to_string()),
-            };
+        return ReaderOutput {
+            speech: ("No Python context found at cursor.".to_string()),
+        };
     }
 
     ReaderOutput {
@@ -142,7 +143,7 @@ fn read_current_scope(input: &ReaderInput) -> ReaderOutput {
     }
 
     ReaderOutput {
-        speech: format!("Current Scope is not available for {} yet.", input.language),
+        speech: format!("Current scope is not available for {} yet.", input.language),
     }
 }
 
@@ -170,7 +171,7 @@ mod tests {
 
         let output = read_code(input);
 
-        assert_eq!(output.speech, "Current Scope: top level.");
+        assert_eq!(output.speech, "Current scope: top level.");
     }
 
     #[test]
@@ -184,7 +185,7 @@ mod tests {
 
         let output = read_code(input);
 
-        assert_eq!(output.speech, "Current Scope: function calculate total.");
+        assert_eq!(output.speech, "Current scope: function calculate total.");
     }
 
     #[test]
@@ -205,7 +206,7 @@ mod tests {
 
         assert_eq!(
             output.speech,
-            "Current Scope: if statement, inside function calculate total."
+            "Current scope: if statement, inside function calculate total."
         );
     }
 
@@ -227,7 +228,7 @@ mod tests {
 
         assert_eq!(
             output.speech,
-            "Current Scope: for loop, inside function process items."
+            "Current scope: for loop, inside function process items."
         );
     }
 
@@ -250,7 +251,7 @@ mod tests {
 
         assert_eq!(
             output.speech,
-            "Current Scope: for loop, inside class Cart, function print items."
+            "Current scope: for loop, inside class Cart, function print items."
         );
     }
 
@@ -274,7 +275,8 @@ mod tests {
     fn describes_current_context_inside_function() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 1,
             request: ReadRequest::CurrentContext,
         };
@@ -335,7 +337,8 @@ mod tests {
     fn reads_current_python_function_line_structurally() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 0,
             request: ReadRequest::CurrentLine,
         };
@@ -371,7 +374,8 @@ mod tests {
     fn reads_python_function_parameters_when_cursor_is_on_def_line() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 0,
             request: ReadRequest::FunctionParameters,
         };
@@ -385,7 +389,8 @@ mod tests {
     fn reads_python_function_parameters_when_cursor_is_inside_body() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 1,
             request: ReadRequest::FunctionParameters,
         };
@@ -462,7 +467,8 @@ mod tests {
     fn falls_back_to_simple_speech_for_python_return_line() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 1,
             request: ReadRequest::CurrentLine,
         };
@@ -480,7 +486,8 @@ mod tests {
     fn summarizes_python_function_when_cursor_is_on_def_line() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 0,
             request: ReadRequest::FunctionSummary,
         };
@@ -497,7 +504,8 @@ mod tests {
     fn summarizes_python_function_when_cursor_is_inside_body() {
         let input = ReaderInput {
             language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate".to_string(),
+            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
+                .to_string(),
             cursor_line: 1,
             request: ReadRequest::FunctionSummary,
         };
@@ -542,10 +550,7 @@ mod tests {
 
         let output = read_code(input);
 
-        assert_eq!(
-            output.speech,
-            "No Python function was found at the cursor."
-        );
+        assert_eq!(output.speech, "No Python function was found at the cursor.");
     }
 
     #[test]
@@ -580,7 +585,7 @@ mod tests {
 
         assert_eq!(
             output.speech,
-            "Current Scope is not available for rust yet."
+            "Current scope is not available for rust yet."
         );
     }
 

@@ -43,9 +43,9 @@ pub fn describe_current_scope(source: &str, cursor_line: usize) -> Option<String
 
             match context_description {
                 Some(context_description) => Some(format!(
-                    "Current Scope: {scope_description}, {context_description}."
+                    "Current scope: {scope_description}, {context_description}."
                 )),
-                None => Some(format!("Current Scope: {scope_description}.")),
+                None => Some(format!("Current scope: {scope_description}.")),
             }
         }
         None => describe_non_local_scope(class_node, function_node, source),
@@ -64,20 +64,20 @@ fn describe_non_local_scope(
             let function_name = get_function_name(function_node, source);
 
             Some(format!(
-                "Current Scope: function {function_name}, inside class {class_name}."
+                "Current scope: function {function_name}, inside class {class_name}."
             ))
         }
         (Some(class_node), None) => {
             let class_name = get_class_name(class_node, source);
 
-            Some(format!("Current Scope: class {class_name}."))
+            Some(format!("Current scope: class {class_name}."))
         }
         (None, Some(function_node)) => {
             let function_name = get_function_name(function_node, source);
 
-            Some(format!("Current Scope: function {function_name}."))
+            Some(format!("Current scope: function {function_name}."))
         }
-        (None, None) => Some("Current Scope: top level.".to_string()),
+        (None, None) => Some("Current scope: top level.".to_string()),
     }
 }
 
@@ -125,7 +125,7 @@ mod tests {
 
         let speech = describe_current_scope(source, 0);
 
-        assert_eq!(speech, Some("Current Scope: top level.".to_string()));
+        assert_eq!(speech, Some("Current scope: top level.".to_string()));
     }
 
     #[test]
@@ -139,7 +139,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: function calculate total.".to_string())
+            Some("Current scope: function calculate total.".to_string())
         );
     }
 
@@ -155,7 +155,7 @@ mod tests {
 
         let speech = describe_current_scope(source, 1);
 
-        assert_eq!(speech, Some("Current Scope: class Cart.".to_string()));
+        assert_eq!(speech, Some("Current scope: class Cart.".to_string()));
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: function calculate total, inside class Cart.".to_string())
+            Some("Current scope: function calculate total, inside class Cart.".to_string())
         );
     }
 
@@ -186,7 +186,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: if statement, inside function calculate total.".to_string())
+            Some("Current scope: if statement, inside function calculate total.".to_string())
         );
     }
 
@@ -202,7 +202,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: for loop, inside function process items.".to_string())
+            Some("Current scope: for loop, inside function process items.".to_string())
         );
     }
 
@@ -219,7 +219,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: for loop, inside class Cart, function print items.".to_string())
+            Some("Current scope: for loop, inside class Cart, function print items.".to_string())
         );
     }
 
@@ -236,7 +236,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: if statement, inside function process items.".to_string())
+            Some("Current scope: if statement, inside function process items.".to_string())
         );
     }
 
@@ -252,7 +252,7 @@ mod tests {
 
         assert_eq!(
             speech,
-            Some("Current Scope: while loop, inside function countdown.".to_string())
+            Some("Current scope: while loop, inside function countdown.".to_string())
         );
     }
 }
