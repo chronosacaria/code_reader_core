@@ -224,6 +224,10 @@ repositiories shall be provided.
   - Author: tamasfe
   - License: [MIT License](https://github.com/tamasfe/taplo/blob/master/LICENSE)
   - Repo Link: [https://github.com/tamasfe/taplo](https://github.com/tamasfe/taplo)
+- GitHub Markdown Preview
+  - Author: Matt Bierner
+  - License: [MIT License](https://github.com/mjbvz/vscode-github-markdown-preview/blob/master/LICENSE)
+  - Repo Link: [https://github.com/mjbvz/vscode-github-markdown-preview](https://github.com/mjbvz/vscode-github-markdown-preview)
 - markdownlint
   - Author: David Anson
   - License: [MIT License](https://github.com/DavidAnson/vscode-markdownlint/blob/master/LICENSE)
