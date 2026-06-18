@@ -38,6 +38,14 @@ pub struct ReaderInput {
     pub language: String,
     pub source: String,
     pub cursor_line: usize,
+
+    /// Zero-based cursor column within `cursor_line`.
+    ///
+    /// For example, if the caller sends JSON without `cursor_column`,
+    /// the core will treat the cursor as being at the start of the line.
+    #[serde(default)]
+    pub cursor_column: usize,
+
     pub request: ReadRequest,
 
     /// Diagnostics supplied by the caller.

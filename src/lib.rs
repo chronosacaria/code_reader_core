@@ -177,6 +177,7 @@ mod tests {
             language: language.to_string(),
             source: source.to_string(),
             cursor_line,
+            cursor_column: 0,
             request,
             diagnostics: Vec::new(),
         }
@@ -193,20 +194,67 @@ mod tests {
             language: language.to_string(),
             source: source.to_string(),
             cursor_line,
+            cursor_column: 0,
             request,
             diagnostics,
         }
     }
 
+    fn reader_input_at(
+        language: &str,
+        source: &str,
+        cursor_line: usize,
+        cursor_column: usize,
+        request: ReadRequest,
+    ) -> ReaderInput {
+        ReaderInput { 
+            language: language.to_string(),
+            source: source.to_string(),
+            cursor_line,
+            cursor_column,
+            request,
+            diagnostics: Vec::new(),
+        }
+    }
+
     // Example Supported Language; Python is the hard-coded language
-    fn supported_input(source: &str, cursor_line: usize, request: ReadRequest) -> ReaderInput {
-        reader_input("python", source, cursor_line, request)
+    fn supported_input(
+        source: &str,
+        cursor_line: usize,
+        request: ReadRequest,
+    ) -> ReaderInput {
+        reader_input(
+            "python",
+            source,
+            cursor_line,
+            request,
+        )
+    }
+
+    fn supported_input_at(
+        source: &str,
+        cursor_line: usize,
+        cursor_column: usize,
+        request: ReadRequest,
+    ) -> ReaderInput {
+        reader_input_at(
+            "python",
+            source,
+            cursor_line,
+            cursor_column,
+            request,
+        )
     }
 
     // Example Unsupported Language; Rust is the hard-coded language
-    fn unsupported_input(source: &str, cursor_line: usize, request: ReadRequest) -> ReaderInput {
-        reader_input("rust", source, cursor_line, request)
+    fn unsupported_input(source: &str, cursor_line: usize, request: ReadRequest,) -> ReaderInput {
+        reader_input("rust", source, cursor_line, request,)
     }
+
+    // Will enable when needed
+    //fn unsupported_input_at(source: &str, cursor_line: usize, cursor_column: usize, request: ReadRequest,) -> ReaderInput {
+    //    reader_input_at("rust", source, cursor_line, cursor_column, request,)
+    //}
 
     // Will enable when needed
     //fn diagnostic(
@@ -769,7 +817,63 @@ mod tests {
         );
     }
 
+    // Helper Function Tests
+    #[test]
+    fn supported_input_at_sets_cursor_column() {
+        let input = supported_input_at(
+            "total = price + tax_rate",
+            0,
+            16,
+            ReadRequest::CurrentLine,
+        );
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.cursor_column, 16);
+        assert_eq!(input.request, ReadRequest::CurrentLine);
+        assert!(input.diagnostics.is_empty());
+    }
+
     // Deserialisation Tests
+    #[test]
+    fn deserializes_json_input_without_cursor_column() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "print('hello')",
+            "cursor_line": 0,
+            "request": "current_line"
+        }
+        "#;
+
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.cursor_column, 0);
+        assert_eq!(input.request, ReadRequest::CurrentLine);
+    }
+
+    #[test]
+    fn deserializes_json_input_with_cursor_column() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "total = price + tax_rate",
+            "cursor_line": 0,
+            "cursor_column": 16,
+            "request": "current_line"
+        }
+        "#;
+
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.cursor_column, 16);
+        assert_eq!(input.request, ReadRequest::CurrentLine);
+    }
+
     #[test]
     fn deserializes_json_input_for_diagnostics_near_cursor_without_diagnostics() {
         let json = r#"
