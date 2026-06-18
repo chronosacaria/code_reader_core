@@ -3,13 +3,7 @@ pub mod languages;
 pub mod model;
 pub mod speech;
 
-pub use model::{
-    DiagnosticSeverity,
-    ReadRequest,
-    ReaderDiagnostic,
-    ReaderInput,
-    ReaderOutput,
-};
+pub use model::{DiagnosticSeverity, ReadRequest, ReaderDiagnostic, ReaderInput, ReaderOutput};
 
 use speech::make_simple_speech_text;
 
@@ -169,7 +163,77 @@ fn get_line(source: &str, cursor_line: usize) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+
+    // Helper Functions
+    fn reader_input(
+        language: &str,
+        source: &str,
+        cursor_line: usize,
+        request: ReadRequest,
+    ) -> ReaderInput {
+        ReaderInput {
+            language: language.to_string(),
+            source: source.to_string(),
+            cursor_line,
+            request,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    fn reader_input_with_diagnostics(
+        language: &str,
+        source: &str,
+        cursor_line: usize,
+        request: ReadRequest,
+        diagnostics: Vec<ReaderDiagnostic>,
+    ) -> ReaderInput {
+        ReaderInput {
+            language: language.to_string(),
+            source: source.to_string(),
+            cursor_line,
+            request,
+            diagnostics,
+        }
+    }
+
+    // Example Supported Language; Python is the hard-coded language
+    fn supported_input(source: &str, cursor_line: usize, request: ReadRequest) -> ReaderInput {
+        reader_input("python", source, cursor_line, request)
+    }
+
+    // Example Unsupported Language; Rust is the hard-coded language
+    fn unsupported_input(source: &str, cursor_line: usize, request: ReadRequest) -> ReaderInput {
+        reader_input("rust", source, cursor_line, request)
+    }
+
+    // Will enable when needed
+    //fn diagnostic(
+    //    severity: DiagnosticSeverity,
+    //    message: &str,
+    //    start_line: usize,
+    //) -> ReaderDiagnostic {
+    //    diagnostic_with_details(severity, message, start_line, None, None, None)
+    //}
+
+    fn diagnostic_with_details(
+        severity: DiagnosticSeverity,
+        message: &str,
+        start_line: usize,
+        end_line: Option<usize>,
+        source: Option<&str>,
+        code: Option<&str>,
+    ) -> ReaderDiagnostic {
+        ReaderDiagnostic {
+            severity,
+            message: message.to_string(),
+            start_line,
+            end_line,
+            source: source.map(|value| value.to_string()),
+            code: code.map(|value| value.to_string()),
+        }
+    }
 
     // Description Tests
 
@@ -177,13 +241,11 @@ mod tests {
 
     #[test]
     fn describes_no_diagnostics_near_cursor() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "print('hello')".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::DiagnosticsNearCursor,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "print('hello')",
+            0,
+            ReadRequest::DiagnosticsNearCursor
+        );
 
         let output = read_code(input);
 
@@ -192,42 +254,45 @@ mod tests {
 
     #[test]
     fn describes_error_diagnostic_on_cursor_line() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "print(taxrate)".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::DiagnosticsNearCursor,
-            diagnostics: vec![ReaderDiagnostic {
-                severity: DiagnosticSeverity::Error,
-                message: "Undefined name taxrate".to_string(),
-                start_line: 0,
-                end_line: None,
-                source: Some("pyright".to_string()),
-                code: Some("reportUndefinedVariable".to_string()),
-            }],
-        };
+        let input = reader_input_with_diagnostics(
+            "python",
+            "print(taxrate)",
+            0,
+            ReadRequest::DiagnosticsNearCursor,
+            vec![diagnostic_with_details(
+                DiagnosticSeverity::Error,
+                "Undefined name taxrate",
+                0,
+                None,
+                Some("pyright"),
+                Some("reportUndefinedVariable"),
+            )],
+        );
 
         let output = read_code(input);
 
-        assert_eq!(output.speech, "Error on current line: Undefined name taxrate.");
+        assert_eq!(
+            output.speech,
+            "Error on current line: Undefined name taxrate."
+        );
     }
 
     #[test]
     fn describes_nearest_diagnostic_when_cursor_line_has_no_diagnostic() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "import math\n\nprint(taxrate)".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::DiagnosticsNearCursor,
-            diagnostics: vec![ReaderDiagnostic {
-                severity: DiagnosticSeverity::Error,
-                message: "Undefined name taxrate".to_string(),
-                start_line: 2,
-                end_line: None,
-                source: Some("pyright".to_string()),
-                code: Some("reportUndefinedVariable".to_string()),
-            }],
-        };
+        let input = reader_input_with_diagnostics(
+            "python",
+            "import math\n\nprint(taxrate)",
+            1,
+            ReadRequest::DiagnosticsNearCursor,
+            vec![diagnostic_with_details(
+                DiagnosticSeverity::Error,
+                "Undefined name taxrate",
+                2,
+                None,
+                Some("pyright"),
+                Some("reportUndefinedVariable"),
+            )],
+        );
 
         let output = read_code(input);
 
@@ -239,37 +304,38 @@ mod tests {
 
     #[test]
     fn diagnostics_near_cursor_is_language_agnostic() {
-        let input = ReaderInput {
-            language: "rust".to_string(),
-            source: "fn main() {}".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::DiagnosticsNearCursor,
-            diagnostics: vec![ReaderDiagnostic {
-                severity: DiagnosticSeverity::Warning,
-                message: "Unused function main".to_string(),
-                start_line: 0,
-                end_line: None,
-                source: Some("rust-analyzer".to_string()),
-                code: Some("dead_code".to_string()),
-            }],
-        };
+        let input = reader_input_with_diagnostics(
+            "rust",
+            "fn main() {}",
+            0,
+            ReadRequest::DiagnosticsNearCursor,
+            vec![diagnostic_with_details(
+                DiagnosticSeverity::Warning,
+                "Unused function main",
+                0,
+                None,
+                Some("rust-analyzer"),
+                Some("dead_code"),
+            )],
+        );
 
         let output = read_code(input);
 
-        assert_eq!(output.speech, "Warning on current line: Unused function main.");
+        assert_eq!(
+            output.speech,
+            "Warning on current line: Unused function main."
+        );
     }
 
     // Scope Tests
 
     #[test]
     fn describes_current_scope_at_top_level() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "import math\n\nx = 10\n".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::CurrentScope,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "import math\n\nx = 10\n",
+            0,
+            ReadRequest::CurrentScope
+        );
 
         let output = read_code(input);
 
@@ -278,13 +344,11 @@ mod tests {
 
     #[test]
     fn describes_current_scope_inside_function() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price):\n    return price".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::CurrentScope,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price):\n    return price",
+            1,
+            ReadRequest::CurrentScope,
+        );
 
         let output = read_code(input);
 
@@ -293,18 +357,15 @@ mod tests {
 
     #[test]
     fn describes_current_scope_inside_if_statement() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "\
+        let input = supported_input(
+            "\
                 def calculate_total(price):
                     if price > 0:
                         return price
-                "
-            .to_string(),
-            cursor_line: 2,
-            request: ReadRequest::CurrentScope,
-            diagnostics: Vec::new(),
-        };
+            ",
+            2,
+            ReadRequest::CurrentScope,
+        );
 
         let output = read_code(input);
 
@@ -316,18 +377,15 @@ mod tests {
 
     #[test]
     fn describes_current_scope_inside_for_loop() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "\
+        let input = supported_input(
+            "\
                 def process_items(items):
                     for item in items:
                         print(item)
-                "
-            .to_string(),
-            cursor_line: 2,
-            request: ReadRequest::CurrentScope,
-            diagnostics: Vec::new(),
-        };
+            ",
+            2,
+            ReadRequest::CurrentScope,
+        );
 
         let output = read_code(input);
 
@@ -339,19 +397,16 @@ mod tests {
 
     #[test]
     fn describes_current_scope_inside_method_for_loop() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "\
+        let input = supported_input(
+            "\
                 class Cart:
                     def print_items(self, items):
                         for item in items:
                             print(item)
-                "
-            .to_string(),
-            cursor_line: 3,
-            request: ReadRequest::CurrentScope,
-            diagnostics: Vec::new(),
-        };
+            ",
+            3,
+            ReadRequest::CurrentScope,
+        );
 
         let output = read_code(input);
 
@@ -365,13 +420,11 @@ mod tests {
 
     #[test]
     fn describes_current_context_at_top_level() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "import math\n\nx = 10\n".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::CurrentContext,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "import math\n\nx = 10\n",
+            0,
+            ReadRequest::CurrentContext
+        );
 
         let output = read_code(input);
 
@@ -380,14 +433,11 @@ mod tests {
 
     #[test]
     fn describes_current_context_inside_function() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 1,
-            request: ReadRequest::CurrentContext,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            1,
+            ReadRequest::CurrentContext,
+        );
 
         let output = read_code(input);
 
@@ -396,20 +446,17 @@ mod tests {
 
     #[test]
     fn describes_current_context_inside_class() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "\
+        let input = supported_input(
+            "\
                 class Cart:
                     tax_rate = 0.19
 
                     def calculate_total(self):
                         return 0
-                "
-            .to_string(),
-            cursor_line: 1,
-            request: ReadRequest::CurrentContext,
-            diagnostics: Vec::new(),
-        };
+            ",
+            1,
+            ReadRequest::CurrentContext,
+        );
 
         let output = read_code(input);
 
@@ -418,18 +465,15 @@ mod tests {
 
     #[test]
     fn describes_current_context_inside_method() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "\
+        let input = supported_input(
+            "\
                 class Cart:
                     def calculate_total(self, price):
                         return price
-                "
-            .to_string(),
-            cursor_line: 2,
-            request: ReadRequest::CurrentContext,
-            diagnostics: Vec::new(),
-        };
+            ",
+            2,
+            ReadRequest::CurrentContext,
+        );
 
         let output = read_code(input);
 
@@ -445,14 +489,11 @@ mod tests {
 
     #[test]
     fn reads_current_python_function_line_structurally() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 0,
-            request: ReadRequest::CurrentLine,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            0,
+            ReadRequest::CurrentLine,
+        );
 
         let output = read_code(input);
 
@@ -464,13 +505,11 @@ mod tests {
 
     #[test]
     fn reads_current_typed_python_function_line_structurally() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::CurrentLine,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate",
+            0,
+            ReadRequest::CurrentLine,
+        );
 
         let output = read_code(input);
 
@@ -484,14 +523,11 @@ mod tests {
 
     #[test]
     fn reads_python_function_parameters_when_cursor_is_on_def_line() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 0,
-            request: ReadRequest::FunctionParameters,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            0,
+            ReadRequest::FunctionParameters,
+        );
 
         let output = read_code(input);
 
@@ -500,14 +536,11 @@ mod tests {
 
     #[test]
     fn reads_python_function_parameters_when_cursor_is_inside_body() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 1,
-            request: ReadRequest::FunctionParameters,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            1,
+            ReadRequest::FunctionParameters,
+        );
 
         let output = read_code(input);
 
@@ -516,13 +549,11 @@ mod tests {
 
     #[test]
     fn reads_typed_python_function_parameters_when_cursor_is_inside_body() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::FunctionParameters,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate",
+            1,
+            ReadRequest::FunctionParameters,
+        );
 
         let output = read_code(input);
 
@@ -534,13 +565,11 @@ mod tests {
 
     #[test]
     fn reads_no_parameters_for_function_without_parameters() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def main():\n    return 0".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::FunctionParameters,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def main():\n    return 0",
+            1,
+            ReadRequest::FunctionParameters,
+        );
 
         let output = read_code(input);
 
@@ -551,13 +580,11 @@ mod tests {
 
     #[test]
     fn reads_blank_line() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def example():\n\n    return 1".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::CurrentLine,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def example():\n\n    return 1",
+            1,
+            ReadRequest::CurrentLine,
+        );
 
         let output = read_code(input);
 
@@ -566,13 +593,11 @@ mod tests {
 
     #[test]
     fn handles_cursor_line_past_end_of_file() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "print('hello')".to_string(),
-            cursor_line: 20,
-            request: ReadRequest::CurrentLine,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "print('hello')",
+            20,
+            ReadRequest::CurrentLine,
+        );
 
         let output = read_code(input);
 
@@ -583,14 +608,11 @@ mod tests {
 
     #[test]
     fn falls_back_to_simple_speech_for_python_return_line() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 1,
-            request: ReadRequest::CurrentLine,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            1,
+            ReadRequest::CurrentLine,
+        );
 
         let output = read_code(input);
 
@@ -603,14 +625,11 @@ mod tests {
 
     #[test]
     fn summarizes_python_function_when_cursor_is_on_def_line() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 0,
-            request: ReadRequest::FunctionSummary,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            0,
+            ReadRequest::FunctionSummary,
+        );
 
         let output = read_code(input);
 
@@ -622,14 +641,11 @@ mod tests {
 
     #[test]
     fn summarizes_python_function_when_cursor_is_inside_body() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price, tax_rate):\n    return price * tax_rate"
-                .to_string(),
-            cursor_line: 1,
-            request: ReadRequest::FunctionSummary,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price, tax_rate):\n    return price * tax_rate",
+            1,
+            ReadRequest::FunctionSummary,
+        );
 
         let output = read_code(input);
 
@@ -641,13 +657,11 @@ mod tests {
 
     #[test]
     fn summarizes_typed_python_function_when_cursor_is_inside_body() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate".to_string(),
-            cursor_line: 1,
-            request: ReadRequest::FunctionSummary,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "def calculate_total(price: float, tax_rate: float = 0.19) -> float:\n    return price * tax_rate",
+            1,
+            ReadRequest::FunctionSummary,
+        );
 
         let output = read_code(input);
 
@@ -663,13 +677,11 @@ mod tests {
 
     #[test]
     fn returns_message_when_no_python_function_found_at_cursor() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "import math\n\nx = 10\n".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::FunctionSummary,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "import math\n\nx = 10\n",
+            0,
+            ReadRequest::FunctionSummary,
+        );
 
         let output = read_code(input);
 
@@ -678,13 +690,11 @@ mod tests {
 
     #[test]
     fn returns_message_when_function_summaries_not_supported_for_language() {
-        let input = ReaderInput {
-            language: "rust".to_string(),
-            source: "fn main() {}".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::FunctionSummary,
-            diagnostics: Vec::new(),
-        };
+        let input = unsupported_input(
+            "fn main() {}",
+            0,
+            ReadRequest::FunctionSummary,
+        );
 
         let output = read_code(input);
 
@@ -698,13 +708,11 @@ mod tests {
 
     #[test]
     fn returns_message_when_current_scope_not_supported_for_language() {
-        let input = ReaderInput {
-            language: "rust".to_string(),
-            source: "fn main() {}".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::CurrentScope,
-            diagnostics: Vec::new(),
-        };
+        let input = unsupported_input(
+            "fn main() {}",
+            0,
+            ReadRequest::CurrentScope,
+        );
 
         let output = read_code(input);
 
@@ -716,13 +724,11 @@ mod tests {
 
     #[test]
     fn returns_message_when_current_context_not_supported_for_language() {
-        let input = ReaderInput {
-            language: "rust".to_string(),
-            source: "fn main() {}".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::CurrentContext,
-            diagnostics: Vec::new(),
-        };
+        let input = unsupported_input(
+            "fn main() {}",
+            0,
+            ReadRequest::CurrentContext,
+        );
 
         let output = read_code(input);
 
@@ -736,13 +742,11 @@ mod tests {
 
     #[test]
     fn returns_message_when_no_python_function_found_for_parameters() {
-        let input = ReaderInput {
-            language: "python".to_string(),
-            source: "import math\n\nx = 10\n".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::FunctionParameters,
-            diagnostics: Vec::new(),
-        };
+        let input = supported_input(
+            "import math\n\nx = 10\n",
+            0,
+            ReadRequest::FunctionParameters,
+        );
 
         let output = read_code(input);
 
@@ -751,13 +755,11 @@ mod tests {
 
     #[test]
     fn returns_message_when_function_parameters_not_supported_for_language() {
-        let input = ReaderInput {
-            language: "rust".to_string(),
-            source: "fn main() {}".to_string(),
-            cursor_line: 0,
-            request: ReadRequest::FunctionParameters,
-            diagnostics: Vec::new(),
-        };
+        let input = unsupported_input(
+            "fn main() {}",
+            0,
+            ReadRequest::FunctionParameters,
+        );
 
         let output = read_code(input);
 
