@@ -76,11 +76,26 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [MIT License](https://github.com/BurntSushi/aho-corasick/blob/master/LICENSE-MIT),
     [Unlicense](https://github.com/BurntSushi/aho-corasick/blob/master/UNLICENSE),
   - Repo Link: [https://github.com/BurntSushi/aho-corasick](https://github.com/BurntSushi/aho-corasick)
+- alloc
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/main/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/main/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/alloc](https://github.com/rust-lang/rust/tree/master/library/alloc)
 - cc-rs
   - Author: Alex Crichton
   - Licenses: [Apache 2.0](https://github.com/rust-lang/cc-rs/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/rust-lang/cc-rs/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/rust-lang/cc-rs](https://github.com/rust-lang/cc-rs)
+- cfg_if
+  - Author: Alex Crichton
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/cfg-if/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/cfg-if/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/cfg-if](https://github.com/rust-lang/cfg-if)
+- core (Rust)
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/main/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/main/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/core](https://github.com/rust-lang/rust/tree/master/library/core)
 - crates.io
   - Author: The Rust Project Developers
   - Licenses: [Apache 2.0](https://github.com/rust-lang/crates.io/blob/master/LICENSE-APACHE),
@@ -96,6 +111,15 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [Apache 2.0](https://docs.rs/crate/find-msvc-tools/latest/source/LICENSE-APACHE),
     [MIT License](https://docs.rs/crate/find-msvc-tools/latest/source/LICENSE-MIT)
   - Source Link: [https://docs.rs/crate/find-msvc-tools/](https://docs.rs/crate/find-msvc-tools/)
+- foldhash
+  - Author: Orson Peters
+  - License: [zlib License](https://github.com/orlp/foldhash/blob/master/LICENSE)
+  - Repo Link: [https://github.com/orlp/foldhash](https://github.com/orlp/foldhash)
+- getopts
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/getopts/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/getopts/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/getopts](https://github.com/rust-lang/getopts)
 - hashbrown
   - Author: Amanieu d'Antras
   - Licenses: [Apache 2.0](https://github.com/rust-lang/hashbrown/blob/master/LICENSE-APACHE),
@@ -111,11 +135,31 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [Apache 2.0](https://github.com/dtolnay/itoa/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/dtolnay/itoa/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/dtolnay/itoa](https://github.com/dtolnay/itoa)
+- libc
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/libc/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/libc/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/libc](https://github.com/rust-lang/libc)
 - memchr
   - Author: Andrew Gallant
   - Licenses: [MIT License](https://github.com/BurntSushi/memchr/blob/master/LICENSE-MIT),
     [Unlicense](https://github.com/BurntSushi/memchr/blob/master/UNLICENSE),
   - Repo Link: [https://github.com/BurntSushi/memchr](https://github.com/BurntSushi/memchr)
+- panic_abort
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/panic_abort](https://github.com/rust-lang/rust/tree/master/library/panic_abort)
+- panic_unwind
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/panic_unwind](https://github.com/rust-lang/rust/tree/master/library/panic_unwind)
+- proc-macro
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/proc_macro](https://github.com/rust-lang/rust/tree/master/library/proc_macro)
 - proc-macro2
   - Author: David Tolnay
   - Licenses: [Apache 2.0](https://github.com/dtolnay/proc-macro2/blob/master/LICENSE-APACHE),
@@ -126,6 +170,21 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [Apache 2.0](https://github.com/dtolnay/quote/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/dtolnay/quote/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/dtolnay/quote](https://github.com/dtolnay/quote)
+- rand
+  - Authors: Developers of the Rand Project, The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-random/rand/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-random/rand/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-random/rand](https://github.com/rust-random/rand)
+- rand_core
+  - Authors: Developers of the Rand Project
+  - Licenses: [Apache 2.0](https://github.com/rust-random/book/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-random/book/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-random/book](https://github.com/rust-random/book)
+- rand_xorshift
+  - Authors: Developers of the Rand Project, The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-random/rngs/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-random/rngs/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-random/rngs](https://github.com/rust-random/rngs)
 - regex
   - Author: The Rust Project Developers
   - Licenses: [Apache 2.0](https://github.com/rust-lang/regex/blob/master/LICENSE-APACHE),
@@ -141,6 +200,16 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [Apache 2.0](https://github.com/rust-lang/regex/blob/master/regex-syntax/LICENSE-APACHE),
     [MIT License](https://github.com/rust-lang/regex/blob/master/regex-syntax/LICENSE-MIT)
   - Repo Link: [https://github.com/rust-lang/regex/tree/master/regex-syntax](https://github.com/rust-lang/regex/tree/master/regex-syntax)
+- rustc_demangle
+  - Author: Alex Crichton
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rustc-demangle/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rustc-demangle/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rustc-demangle](https://github.com/rust-lang/rustc-demangle)
+- rustc_literal_escaper
+  - Author: \*Not Stated, assumed to be The Rust Project Developers
+  - License: [Apache 2.0](https://github.com/rust-lang/literal-escaper/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/literal-escaper/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/literal-escaper](https://github.com/rust-lang/literal-escaper)
 - serde
   - Author: serde-rs
   - Licenses: [Apache 2.0](https://github.com/serde-rs/serde/blob/master/LICENSE-APACHE),
@@ -166,11 +235,31 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
   - Licenses: [Apache 2.0](https://github.com/comex/rust-shlex/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/comex/rust-shlex/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/comex/rust-shlex](https://github.com/comex/rust-shlex)
+- std
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/std](https://github.com/rust-lang/rust/tree/master/library/std)
+- std_detect
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/std_detect](https://github.com/rust-lang/rust/tree/master/library/std_detect)
 - streaming-iterator
   - Author: Steven Fackler
   - Licenses: [Apache 2.0](https://github.com/sfackler/streaming-iterator/blob/master/LICENSE-APACHE),
     [MIT License](https://github.com/sfackler/streaming-iterator/blob/master/LICENSE-MIT)
   - Repo Link: [https://github.com/sfackler/streaming-iterator](https://github.com/sfackler/streaming-iterator)
+- syn
+  - Author: David Tolnay
+  - Licenses: [Apache 2.0](https://github.com/dtolnay/syn/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/dtolnay/syn/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/dtolnay/syn](https://github.com/dtolnay/syn)
+- test
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/test](https://github.com/rust-lang/rust/tree/master/library/test)
 - tree-sitter
   - Author: Max Brunsfeld
   - Licenses: [MIT License](https://github.com/tree-sitter/tree-sitter/blob/master/LICENSE)
@@ -189,6 +278,11 @@ to try to make sure that I cite every package noted in the [Cargo.lock](https://
     [MIT License](https://github.com/dtolnay/unicode-ident/blob/master/LICENSE-MIT),
     [Unicode License V3](https://github.com/dtolnay/unicode-ident/blob/master/LICENSE-UNICODE)
   - Repo Link: [https://github.com/dtolnay/unicode-ident](https://github.com/dtolnay/unicode-ident)
+- unwind
+  - Author: The Rust Project Developers
+  - Licenses: [Apache 2.0](https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE),
+    [MIT License](https://github.com/rust-lang/rust/blob/master/LICENSE-MIT)
+  - Repo Link: [https://github.com/rust-lang/rust/tree/master/library/unwind](https://github.com/rust-lang/rust/tree/master/library/unwind)
 - zmij
   - Author: David Tolnay
   - License: [MIT License](https://github.com/dtolnay/zmij/blob/master/LICENSE-MIT)
