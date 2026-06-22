@@ -22,6 +22,7 @@ use crate::model::ReaderDiagnostic;
 #[serde(rename_all = "snake_case")]
 pub enum ReadRequest {
     CurrentLine,
+    CurrentSymbol,
     CurrentScope,
     FunctionSummary,
     FunctionParameters,

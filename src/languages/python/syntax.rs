@@ -1,4 +1,4 @@
-use tree_sitter::{Node, Parser, Tree};
+use tree_sitter::{Node, Parser, Point, Tree};
 
 use crate::speech::make_simple_speech_text;
 
@@ -135,35 +135,6 @@ pub fn find_local_scope_node_containing_line<'tree>(
     best_match
 }
 
-/// Returns true when a syntax node represents a local Python scope/block.
-///
-/// This is intentionally separate from function/class detection.
-/// Function and class nodes are broader context containers, while this helper
-/// focuses on local block structures.
-fn is_local_scope_node(node: Node) -> bool {
-    matches!(
-        node.kind(),
-        "for_statement"
-            |"if_statement"
-            | "match_statement"
-            | "try_statement"
-            | "while_statement"
-            | "with_statement"
-            | "elif_clause"
-            | "else_clause"
-            | "except_clause"
-            | "finally_clause"
-    )
-}
-
-/// Returns true when a syntax node covers the requested line.
-fn node_contains_line(node: Node, line: usize) -> bool {
-    let start_row = node.start_position().row;
-    let end_row = node.end_position().row;
-
-    start_row <= line && line <= end_row
-}
-
 /// Extracts and speech-formats the name of a Python class definition.
 pub fn get_class_name(class_node: Node, source: &str) -> String {
     class_node
@@ -180,6 +151,30 @@ pub fn get_function_name(function_node: Node, source: &str) -> String {
         .and_then(|name_node| name_node.utf8_text(source.as_bytes()).ok())
         .map(make_simple_speech_text)
         .unwrap_or_else(|| "unknown function".to_string())
+}
+
+/// Describes the smallest meaningful Python symbol or token at the cursor.
+///
+/// This is used by `CurrentSymbol`.
+///
+/// The cursor position is zero-based:
+///
+/// - `cursor_line` is the zero-based row
+/// - `cursor_column` is the zero-based column within that row
+pub fn describe_symbol_at_position(source: &str, cursor_line: usize, cursor_column: usize,) -> Option<String> {
+    let line_text = source.lines().nth(cursor_line)?;
+
+    if cursor_column >= line_text.len() {
+        return None;
+    }
+
+    let tree = parse_python(source)?;
+    let root = tree.root_node();
+
+    let symbol_node =
+        find_smallest_node_containing_position(root, cursor_line, cursor_column,)?;
+
+    describe_symbol_node(symbol_node, source,)
 }
 
 /// Converts a local Python scope node into short speech.
@@ -249,6 +244,264 @@ pub fn describe_function_parameters(function_node: Node, source: &str) -> String
     let parameter_speech = describe_parameters(&parameters);
 
     format!("{parameter_speech}.")
+}
+
+/// Recursively finds the smallest syntax node that contains the cursor position.
+///
+/// This uses all children rather than only named children.
+fn find_smallest_node_containing_position<'tree>(
+    node: Node<'tree>,
+    cursor_line: usize,
+    cursor_column: usize,
+) -> Option<Node<'tree>> {
+    let start = Point {
+        row: cursor_line,
+        column: cursor_column,
+    };
+
+    let end = Point {
+        row: cursor_line,
+        column: cursor_column.saturating_add(1),
+    };
+
+    node.descendant_for_point_range(start, end)
+}
+
+/// Returns true when a syntax node represents a local Python scope/block.
+///
+/// This is intentionally separate from function/class detection.
+/// Function and class nodes are broader context containers, while this helper
+/// focuses on local block structures.
+fn is_local_scope_node(node: Node) -> bool {
+    matches!(
+        node.kind(),
+        "for_statement"
+            |"if_statement"
+            | "match_statement"
+            | "try_statement"
+            | "while_statement"
+            | "with_statement"
+            | "elif_clause"
+            | "else_clause"
+            | "except_clause"
+            | "finally_clause"
+    )
+}
+
+/// Returns true for broad syntax containers that should not be spoken as
+/// current symbols.
+fn is_symbol_container_node(kind: &str) -> bool {
+    matches!(
+        kind,
+        "module"
+            | "block"
+            | "expression_statement"
+            | "assignment"
+            | "return_statement"
+            | "call"
+            | "argument_list"
+            | "parameters"
+    )
+}
+
+/// Returns true when the text is a Python keyword that should be spoken as a
+/// keyword rather than a generic symbol.
+fn is_python_keyword(text: &str) -> bool {
+    matches!(
+        text,
+        "and"
+            | "as"
+            | "assert"
+            | "async"
+            | "await"
+            | "break"
+            | "class"
+            | "continue"
+            | "def"
+            | "del"
+            | "elif"
+            | "else"
+            | "except"
+            | "false"
+            | "finally"
+            | "for"
+            | "from"
+            | "global"
+            | "if"
+            | "import"
+            | "in"
+            | "is"
+            | "lambda"
+            | "none"
+            | "nonlocal"
+            | "not"
+            | "or"
+            | "pass"
+            | "raise"
+            | "return"
+            | "true"
+            | "try"
+            | "while"
+            | "with"
+            | "yield"
+    )
+}
+
+/// Returns true when a syntax node covers the requested line.
+fn node_contains_line(node: Node, line: usize) -> bool {
+    let start_row = node.start_position().row;
+    let end_row = node.end_position().row;
+
+    start_row <= line && line <= end_row
+}
+
+/// Returns true when a syntax node covers the requested cursor position.
+///
+/// Tree-sitter positions use zero-based rows and columns.
+///
+/// This treats the end column as exclusive.
+//fn node_contains_position(node: Node, cursor_line: usize, cursor_column: usize,) -> bool {
+//    let point = Point {
+//        row: cursor_line,
+//        column: cursor_column,
+//    };
+//
+//    let start = node.start_position();
+//    let end = node.end_position();
+//
+//    if point.row < start.row || point. row > end.row {
+//        return false;
+//    }
+//    
+//    if point.row == start.row && point.column < start.column {
+//        return false;
+//    }
+//
+//    if point.row == end.row && point.column >= end.column {
+//        return false;
+//    }
+//
+//    true
+//}
+
+/// Converts common Python operator tokens into speech.
+fn describe_operator(text: &str,) -> Option<&'static str> {
+    // TODO: check to see what was missed and what needs to be added or reworded
+    match text {
+        // Arithmetic Operators
+        "+" => Some("plus"),
+        "-" => Some("minus"),
+        "*" => Some("multiplied by"),
+        "/" => Some("divided by"),
+        "%" => Some("modulus"),
+        "**" => Some("exponent"),
+        "//" => Some("floor divided by"),
+        // Assignment Operators
+        "=" => Some("equals"),
+        "+=" => Some("plus equals"),
+        "-=" => Some("minus equals"),
+        "*=" => Some("multiply equals"),
+        "/=" => Some("divide equals"),
+        "%=" => Some("modulus equals"),
+        "//=" => Some("floor divide equals"),
+        "**=" => Some("exponentiation equals"),
+        "&=" => Some("and equals"),
+        "|=" => Some("or equals"),
+        "^=" => Some("x-or equals"), // Should this just be "exclusive or equals"?
+        ">>=" => Some("right shift equals"),
+        "<<=" => Some("left shift equals"),
+        ":=" => Some("assigned as and equals"),
+        // Comparison Operators
+        "==" => Some("is equal to"),
+        "!=" => Some("is not equal to"),
+        ">" => Some("greater than"),
+        "<" => Some("less than"),
+        ">=" => Some("greater than or equal to"),
+        "<=" => Some("less than or equal to"),
+        // Bitwise Operators
+        "&" => Some("bitwise and"),
+        "|" => Some("bitwise or"),
+        "^" => Some("x-or"), // Should this just be "exclusive or"?
+        "~" => Some("bitwise not"),
+        "<<" => Some("left shift by"),
+        ">>" => Some("right shift by"),
+        // Other Operators
+        ":" => Some("colon"),
+        "," => Some("comma"),
+        "." => Some("dot"),
+        "->" => Some("arrow"),
+        "(" => Some("left parenthesis"),
+        ")" => Some("right parenthesis"),
+        "[" => Some("left bracket"),
+        "]" => Some("right bracket"),
+        "{" => Some("left brace"),
+        "}" => Some("right brace"),
+        // Should @ be "decorator"?
+        "@" => Some("at sign"),
+        _ => None,
+    }
+}
+
+/// Converts a syntax node at the cursor into speech.
+///
+/// This deliberately ignores broad container nodes such as `module` and
+/// `expression_statement`. If the cursor is on whitespace inside one of those
+/// containers, there may be no meaningful symbol to speak.
+fn describe_symbol_node(node: Node, source: &str,) -> Option<String> {
+    let text = node.utf8_text(source.as_bytes()).ok()?.trim();
+
+    // TODO Might give this a speech. Something like "No symbol found" or something similar?
+    if text.is_empty() {
+        return None;
+    }
+
+    if is_symbol_container_node(node.kind()) {
+        return None;
+    }
+
+    if is_python_keyword(text) {
+        return Some(format!(
+            "Keyword {}.",
+            make_simple_speech_text(text)
+        ));
+    }
+
+    if let Some(operator_speech) = describe_operator(text) {
+        return Some(format!(
+            "Operator {operator_speech}."
+        ));
+    }
+
+    match node.kind() {
+        "identifier" => Some(format!(
+            "Symbol {}.",
+            make_simple_speech_text(text)
+        )),
+        "integer" | "float" => {
+            let number_speech = speak_simple_number(text)
+                .unwrap_or_else(|| make_simple_speech_text(text));
+
+            Some(format!(
+                "Number {number_speech}."
+            ))
+        }
+        "string" | "string_content" => {
+            let string_text = text
+                .trim_matches('"')
+                .trim_matches('\'')
+                .trim();
+
+            Some(format!(
+                "String {}.",
+                make_simple_speech_text(string_text)
+            ))
+        }
+        _ if node.child_count() == 0 => Some(format!(
+            "Symbol {}.",
+            make_simple_speech_text(text)
+        )),
+        _ => None,
+    }
 }
 
 /// Converts a list of parameter summaries into one speech sentence.
@@ -768,7 +1021,6 @@ mod tests {
         assert!(scope_node.is_none());
     }
 
-
     // Getting Tests
 
     #[test]
@@ -788,7 +1040,6 @@ mod tests {
         assert_eq!(name, "Cart");
     }
 
-
     #[test]
     fn gets_function_name() {
         let source = "\
@@ -807,6 +1058,123 @@ mod tests {
     }
 
     // Describing Tests
+
+    #[test]
+    fn describes_identifier_symbol_at_start_of_identifier() {
+        let source = "total = price + tax_rate";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            16
+        );
+
+        assert_eq!(speech, Some("Symbol tax rate.".to_string()));
+    }
+
+    #[test]
+    fn describes_identifier_symbol_in_middle_of_identifier() {
+        let source = "total = price + tax_rate";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            20,
+        );
+
+        assert_eq!(speech, Some("Symbol tax rate.".to_string()));
+    }
+
+    #[test]
+    fn describes_identifier_symbol_at_end_of_identifier() {
+        let source = "total = price + tax_rate";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            23,
+        );
+
+        assert_eq!(speech, Some("Symbol tax rate.".to_string()));
+    }
+
+    #[test]
+    fn describes_keyword_under_cursor() {
+        let source = "return price";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            0,
+        );
+
+        assert_eq!(speech, Some("Keyword return.".to_string()));
+    }
+
+    #[test]
+    fn describes_number_literal_under_cursor() {
+        let source = "value = 0.19";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            8
+        );
+
+        assert_eq!(speech, Some("Number zero point one nine.".to_string()));
+    }
+
+    #[test]
+    fn describes_string_literal_under_cursor() {
+        let source = "name = \"guest\"";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            8,
+        );
+
+        assert_eq!(speech, Some("String guest.".to_string()));
+    }
+
+    #[test]
+    fn describes_operator_under_cursor() {
+        let source = "total = price + tax_rate";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            14,
+        );
+
+        assert_eq!(speech, Some("Operator plus.".to_string()));
+    }
+
+    #[test]
+    fn returns_none_for_whitespace_under_cursor() {
+        let source = "total = price + tax_rate";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            13,
+        );
+
+        assert_eq!(speech, None);
+    }
+
+    #[test]
+    fn returns_none_when_cursor_column_is_past_end_of_line() {
+        let source = "total = price + tax_rate";
+
+        let speech = describe_symbol_at_position(
+            source,
+            0,
+            999,
+        );
+
+        assert_eq!(speech, None);
+    }
     
     #[test]
     fn describes_function_parameters_only() {

@@ -15,9 +15,10 @@ pub fn read_code(input: ReaderInput) -> ReaderOutput {
     match input.request {
         ReadRequest::CurrentLine => read_current_line(&input),
         ReadRequest::CurrentScope => read_current_scope(&input),
+        ReadRequest::CurrentSymbol => read_current_symbol(&input),
+        ReadRequest::CurrentContext => read_current_context(&input),
         ReadRequest::FunctionParameters => read_function_parameters(&input),
         ReadRequest::FunctionSummary => read_function_summary(&input),
-        ReadRequest::CurrentContext => read_current_context(&input),
         ReadRequest::DiagnosticsNearCursor => read_diagnostics_near_cursor(&input),
     }
 }
@@ -49,6 +50,52 @@ fn read_current_line(input: &ReaderInput) -> ReaderOutput {
 
     ReaderOutput {
         speech: format!("Current line: {spoken_line}"),
+    }
+}
+
+/// Describes the current code scope at the cursor.
+///
+/// For now, this only works for Python, but will be expanded in the future.
+fn read_current_scope(input: &ReaderInput) -> ReaderOutput {
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) =
+            languages::python::describe_current_scope(&input.source, input.cursor_line)
+        {
+            return ReaderOutput { speech };
+        }
+
+        return ReaderOutput {
+            speech: ("No Python scope found at cursor.".to_string()),
+        };
+    }
+
+    ReaderOutput {
+        speech: format!("Current scope is not available for {} yet.", input.language),
+    }
+}
+
+/// Reads the symbol or token under the cursor.
+fn read_current_symbol(input: &ReaderInput) -> ReaderOutput {
+    if input.language.eq_ignore_ascii_case("python") {
+        if let Some(speech) = 
+        languages::python::describe_current_symbol(
+            &input.source,
+            input.cursor_line,
+            input.cursor_column,
+        ) {
+            return ReaderOutput { speech };
+        }
+
+        return ReaderOutput {
+            speech: "No Python symbol was found at the cursor.".to_string(),
+        };
+    }
+
+    ReaderOutput {
+        speech: format!(
+            "Current symbol is not available for {} yet.",
+            input.language
+        ),
     }
 }
 
@@ -121,27 +168,6 @@ fn read_current_context(input: &ReaderInput) -> ReaderOutput {
             "Current context is not available for {} yet.",
             input.language
         ),
-    }
-}
-
-/// Describes the current code scope at the cursor.
-///
-/// For now, this only works for Python, but will be expanded in the future.
-fn read_current_scope(input: &ReaderInput) -> ReaderOutput {
-    if input.language.eq_ignore_ascii_case("python") {
-        if let Some(speech) =
-            languages::python::describe_current_scope(&input.source, input.cursor_line)
-        {
-            return ReaderOutput { speech };
-        }
-
-        return ReaderOutput {
-            speech: ("No Python scope found at cursor.".to_string()),
-        };
-    }
-
-    ReaderOutput {
-        speech: format!("Current scope is not available for {} yet.", input.language),
     }
 }
 
@@ -533,6 +559,36 @@ mod tests {
 
     // Reading Tests
 
+    // Symbol Tests
+
+    #[test]
+    fn reads_current_symbol_under_cursor() {
+        let input = supported_input_at(
+            "total = price + tax_rate",
+            0,
+            16,
+            ReadRequest::CurrentSymbol,
+        );
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Symbol tax rate.");
+    }
+
+    #[test]
+    fn reads_current_operator_under_cursor() {
+        let input = supported_input_at(
+            "total = price + tax_rate",
+            0,
+            14,
+            ReadRequest::CurrentSymbol,
+        );
+
+        let output = read_code(input);
+
+        assert_eq!(output.speech, "Operator plus.");
+    }
+
     // Function Tests
 
     #[test]
@@ -720,6 +776,42 @@ mod tests {
     }
 
     // Null or Empty Return Tests
+
+    // Null or Empty Symbol Return Tests
+    #[test]
+    fn returns_message_when_no_python_symbol_found_at_cursor() {
+        let input = supported_input_at(
+            "total = price + tax_rate",
+            0,
+            13,
+            ReadRequest::CurrentSymbol,
+        );
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "No Python symbol was found at the cursor."
+        );
+    }
+
+    #[test]
+    fn returns_message_when_current_symbol_not_supported_for_language() {
+        let input = reader_input_at(
+            "rust",
+            "fn main() {}",
+            0,
+            0,
+            ReadRequest::CurrentSymbol,
+        );
+
+        let output = read_code(input);
+
+        assert_eq!(
+            output.speech,
+            "Current symbol is not available for rust yet."
+        );
+    }
 
     // Null or Empty Function Return Tests
 
@@ -927,6 +1019,26 @@ mod tests {
             input.diagnostics[0].code,
             Some("reportUndefinedVariable".to_string())
         );
+    }
+
+    #[test]
+    fn deserializes_json_input_for_current_symbol() {
+        let json = r#"
+        {
+            "language": "python",
+            "source": "total = price + tax_rate",
+            "cursor_line": 0,
+            "cursor_column": 16,
+            "request": "current_symbol"
+        }
+        "#;
+
+        let input: ReaderInput = serde_json::from_str(json).unwrap();
+
+        assert_eq!(input.language, "python");
+        assert_eq!(input.cursor_line, 0);
+        assert_eq!(input.cursor_column, 16);
+        assert_eq!(input.request, ReadRequest::CurrentSymbol);
     }
 
     #[test]
