@@ -2,7 +2,7 @@
 
 Code Reader Core is the foundational core of a screen reader extension that can read out code in
 various programming languages in order to facilitate easier checking, troubleshooting, development
-and maintainence by low vision and blind developers.
+and maintenance by low vision and blind developers.
 
 ## Goals
 
@@ -18,8 +18,7 @@ follows:
 
 ## Example of Intention
 
-The ideal output would be based on the requested level of verbosity. A simplified example can be
-as follows:
+The ideal output would be based on the requested level of verbosity. A simplified example can be as follows:
 
 Code to be Read:
 
